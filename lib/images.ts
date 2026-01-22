@@ -17,48 +17,81 @@ export function getImageUrl(
 
   const { maxWidth = 300, maxHeight, quality = 90 } = options;
 
-  // Get the appropriate image tag
+  // Get the appropriate image tag and item ID
   let imageTag: string | null | undefined;
   let itemId = item.Id;
+  let hasImage = false;
 
   if (imageType === 'Primary') {
     imageTag = item.ImageTags?.Primary;
+    hasImage = !!imageTag;
     // For episodes, use series primary image if no episode image
-    if (!imageTag && item.SeriesPrimaryImageTag && item.SeriesId) {
+    if (!hasImage && item.SeriesPrimaryImageTag && item.SeriesId) {
       imageTag = item.SeriesPrimaryImageTag;
       itemId = item.SeriesId;
+      hasImage = true;
     }
     // For episodes/seasons, fall back to parent
-    if (!imageTag && item.ParentPrimaryImageTag && item.ParentId) {
+    if (!hasImage && item.ParentPrimaryImageTag && item.ParentId) {
       imageTag = item.ParentPrimaryImageTag;
       itemId = item.ParentId;
+      hasImage = true;
+    }
+    // If still no image but item has ImageBlurHashes for Primary, image exists
+    if (!hasImage && item.ImageBlurHashes?.Primary) {
+      hasImage = true;
     }
   } else if (imageType === 'Backdrop') {
     imageTag = item.BackdropImageTags?.[0];
+    hasImage = !!imageTag;
     // Use parent backdrop if available
-    if (!imageTag && item.ParentBackdropImageTags?.length && item.ParentBackdropItemId) {
+    if (!hasImage && item.ParentBackdropImageTags?.length && item.ParentBackdropItemId) {
       imageTag = item.ParentBackdropImageTags[0];
       itemId = item.ParentBackdropItemId;
+      hasImage = true;
+    }
+    if (!hasImage && item.ImageBlurHashes?.Backdrop) {
+      hasImage = true;
     }
   } else if (imageType === 'Thumb') {
     imageTag = item.ImageTags?.Thumb;
-    if (!imageTag && item.SeriesThumbImageTag && item.SeriesId) {
+    hasImage = !!imageTag;
+    if (!hasImage && item.SeriesThumbImageTag && item.SeriesId) {
       imageTag = item.SeriesThumbImageTag;
       itemId = item.SeriesId;
+      hasImage = true;
     }
-    if (!imageTag && item.ParentThumbImageTag && item.ParentThumbItemId) {
+    if (!hasImage && item.ParentThumbImageTag && item.ParentThumbItemId) {
       imageTag = item.ParentThumbImageTag;
       itemId = item.ParentThumbItemId;
+      hasImage = true;
+    }
+    if (!hasImage && item.ImageBlurHashes?.Thumb) {
+      hasImage = true;
     }
   }
 
-  if (!imageTag) return null;
+  // If no image info found, still try to load (server might have it)
+  // But prefer returning null if we're certain there's no image
+  if (!hasImage && !imageTag) {
+    // Check if there's any primary image available by looking at ImageTags
+    if (imageType === 'Primary' && !item.ImageTags?.Primary) {
+      // Try anyway - some items have images without tags in response
+      hasImage = true;
+    } else {
+      return null;
+    }
+  }
 
   const params = new URLSearchParams({
-    tag: imageTag,
     quality: quality.toString(),
     maxWidth: maxWidth.toString(),
   });
+
+  // Add tag if available (for caching)
+  if (imageTag) {
+    params.set('tag', imageTag);
+  }
 
   if (maxHeight) {
     params.set('maxHeight', maxHeight.toString());

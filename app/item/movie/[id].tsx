@@ -46,8 +46,8 @@ function formatRuntime(ticks: number | null | undefined): string {
 
 function formatOverview(text: string | null | undefined): string {
   if (!text) return '';
-  // Replace <br>, <br/>, <br /> with newlines
-  return text.replace(/<br\s*\/?>/gi, '\n');
+  // Replace <br>, <br/>, <br />, </br> with newlines
+  return text.replace(/<\/?br\s*\/?>/gi, '\n');
 }
 
 function PersonCard({ person }: { person: BaseItemPerson }) {

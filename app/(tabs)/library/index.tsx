@@ -11,8 +11,7 @@ import { useServerStore } from '@/stores/server.store';
 import { getUserViewsOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors, spacing, radii } from '@/theme';
 
 // Map collection types to SF Symbols
 function getLibraryIcon(collectionType: string | null | undefined): IconSymbolName {
@@ -46,13 +45,20 @@ interface LibraryCardProps {
 
 function LibraryCard({ library }: LibraryCardProps) {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const iconColor = Colors[colorScheme ?? 'dark'].tint;
+  const colors = useColors();
 
   const serverUrl = useServerStore.getState().getCurrentServer()?.url;
-  const imageTag = library.ImageTags?.Primary;
+
+  // Try Primary image first, then Backdrop
+  const primaryTag = library.ImageTags?.Primary;
+  const backdropTag = library.BackdropImageTags?.[0];
+  const imageTag = primaryTag || backdropTag;
+  const imageType = primaryTag ? 'Primary' : 'Backdrop';
+
   const imageUrl = serverUrl && library.Id && imageTag
-    ? `${serverUrl}/Items/${library.Id}/Images/Primary?tag=${imageTag}&maxWidth=400&quality=90`
+    ? `${serverUrl}/Items/${library.Id}/Images/${imageType}?tag=${imageTag}&maxWidth=400&quality=90`
+    : serverUrl && library.Id
+    ? `${serverUrl}/Items/${library.Id}/Images/Primary?maxWidth=400&quality=90`
     : null;
 
   const handlePress = () => {
@@ -62,7 +68,10 @@ function LibraryCard({ library }: LibraryCardProps) {
   };
 
   return (
-    <Pressable style={styles.card} onPress={handlePress}>
+    <Pressable
+      style={[styles.card, { backgroundColor: colors.background.secondary }]}
+      onPress={handlePress}
+    >
       <View style={styles.cardImageContainer}>
         {imageUrl ? (
           <Image
@@ -72,22 +81,22 @@ function LibraryCard({ library }: LibraryCardProps) {
             transition={200}
           />
         ) : (
-          <View style={styles.cardPlaceholder}>
+          <View style={[styles.cardPlaceholder, { backgroundColor: colors.background.tertiary }]}>
             <IconSymbol
               name={getLibraryIcon(library.CollectionType)}
-              size={48}
-              color={iconColor}
+              size={40}
+              color={colors.interactive.primary}
             />
           </View>
         )}
       </View>
       <View style={styles.cardContent}>
-        <ThemedText style={styles.cardTitle} numberOfLines={1}>
+        <ThemedText style={[styles.cardTitle, { color: colors.text.primary }]} numberOfLines={1}>
           {library.Name}
         </ThemedText>
         {library.ChildCount !== undefined && (
-          <ThemedText style={styles.cardSubtitle}>
-            {library.ChildCount} items
+          <ThemedText style={[styles.cardSubtitle, { color: colors.text.tertiary }]}>
+            {library.ChildCount} {library.ChildCount === 1 ? 'item' : 'items'}
           </ThemedText>
         )}
       </View>
@@ -98,6 +107,7 @@ function LibraryCard({ library }: LibraryCardProps) {
 export default function LibraryListScreen() {
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore((s) => s.currentUser);
+  const colors = useColors();
 
   const { data: userViews, isLoading, error } = useQuery({
     ...getUserViewsOptions(),
@@ -108,7 +118,7 @@ export default function LibraryListScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.text.secondary} />
         </View>
       </ThemedView>
     );
@@ -118,7 +128,10 @@ export default function LibraryListScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.errorContainer}>
-          <ThemedText>Failed to load libraries</ThemedText>
+          <IconSymbol name="exclamationmark.triangle" size={48} color={colors.text.tertiary} />
+          <ThemedText style={[styles.errorText, { color: colors.text.secondary }]}>
+            Failed to load libraries
+          </ThemedText>
         </View>
       </ThemedView>
     );
@@ -131,8 +144,9 @@ export default function LibraryListScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+          { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md },
         ]}
+        showsVerticalScrollIndicator={false}
       >
         <ThemedText type="title" style={styles.title}>
           Library
@@ -146,7 +160,10 @@ export default function LibraryListScreen() {
 
         {libraries.length === 0 && (
           <View style={styles.emptyContainer}>
-            <ThemedText>No libraries found</ThemedText>
+            <IconSymbol name="folder" size={48} color={colors.text.tertiary} />
+            <ThemedText style={[styles.emptyText, { color: colors.text.secondary }]}>
+              No libraries found
+            </ThemedText>
           </View>
         )}
       </ScrollView>
@@ -159,10 +176,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   title: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   loadingContainer: {
     flex: 1,
@@ -173,27 +190,34 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: spacing.md,
+  },
+  errorText: {
+    fontSize: 16,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+    gap: spacing.md,
+  },
+  emptyText: {
+    fontSize: 16,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: spacing.md,
   },
   card: {
-    width: '47%',
-    borderRadius: 12,
+    width: '47.5%',
+    borderRadius: radii.lg,
     overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
   },
   cardImageContainer: {
-    aspectRatio: 16 / 9,
-    backgroundColor: '#1a1a1a',
+    aspectRatio: 16 / 10,
+    position: 'relative',
   },
   cardImage: {
     width: '100%',
@@ -205,7 +229,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardContent: {
-    padding: 12,
+    padding: spacing.sm,
   },
   cardTitle: {
     fontSize: 15,
@@ -213,7 +237,6 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    opacity: 0.6,
     marginTop: 2,
   },
 });
