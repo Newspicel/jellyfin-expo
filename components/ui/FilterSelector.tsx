@@ -17,7 +17,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { IconSymbol } from '@/components/ui';
+import { IconSymbol } from './icon-symbol';
 import { spacing, radii, fontSizes, fontWeights } from '@/theme/tokens';
 import { useColors } from '@/theme';
 import { getQueryFiltersLegacyOptions } from '@/api/generated/@tanstack/react-query.gen';
