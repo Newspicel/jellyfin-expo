@@ -149,11 +149,7 @@ export default function LoginScreen() {
         {publicUsers.length > 0 && (
           <View style={styles.usersSection}>
             <ThemedText style={styles.sectionTitle}>Select User</ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.usersRow}
-            >
+            <View style={styles.usersGrid}>
               {publicUsers.map((user) => {
                 const imageUrl = getUserImageUrl(user);
                 const isSelected = selectedUserId === user.Id;
@@ -186,7 +182,7 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
         )}
 
@@ -264,8 +260,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     opacity: 0.5,
     marginBottom: 12,
+    textAlign: 'center',
   },
-  usersRow: {
+  usersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 12,
   },
   userCard: {

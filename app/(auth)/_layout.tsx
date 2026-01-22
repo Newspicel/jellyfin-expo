@@ -18,13 +18,13 @@ export default function AuthLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Connect to Server',
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="login"
         options={{
-          title: 'Sign In',
+          headerShown: false,
         }}
       />
       <Stack.Screen
