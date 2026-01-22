@@ -381,19 +381,19 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.2 Device Profiles
 
-- [ ] Create `api/device-profile.ts`:
-- [ ] Implement iOS/macOS profile:
-  - [ ] Direct play: H.264, HEVC, AAC, AC3, E-AC3, FLAC, ALAC
-  - [ ] Containers: MP4, MOV, MKV
-  - [ ] Subtitles: SRT, VTT, ASS (external), PGS (burn-in)
-- [ ] Implement tvOS profile:
-  - [ ] Same as iOS with Dolby Atmos support
-- [ ] Implement Android profile:
-  - [ ] Direct play: H.264, HEVC 8-bit, VP9, AV1, AAC, MP3, Opus
-  - [ ] Containers: MP4, MKV, WebM
-- [ ] Implement Android TV profile:
-  - [ ] Same as Android with enhanced audio passthrough
-- [ ] Implement Windows profile
+- [x] Create `api/device-profile.ts`:
+- [x] Implement iOS/macOS profile:
+  - [x] Direct play: H.264, HEVC, AAC, AC3, E-AC3, FLAC, ALAC
+  - [x] Containers: MP4, MOV, MKV
+  - [x] Subtitles: SRT, VTT, ASS (external), PGS (burn-in)
+- [x] Implement tvOS profile:
+  - [x] Same as iOS with Dolby Atmos support
+- [x] Implement Android profile:
+  - [x] Direct play: H.264, HEVC 8-bit, VP9, AV1, AAC, MP3, Opus
+  - [x] Containers: MP4, MKV, WebM
+- [x] Implement Android TV profile:
+  - [x] Same as Android with enhanced audio passthrough
+- [x] Implement Windows profile
 
 ### 3.3 Playback Info & Stream Selection
 
