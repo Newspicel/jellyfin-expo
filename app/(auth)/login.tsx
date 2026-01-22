@@ -198,6 +198,9 @@ export default function LoginScreen() {
             }}
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="username"
+            textContentType="username"
+            importantForAutofill="yes"
             returnKeyType="next"
           />
           <TextInput
@@ -207,6 +210,9 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete="password"
+            textContentType="password"
+            importantForAutofill="yes"
             returnKeyType="go"
             onSubmitEditing={handleLogin}
           />

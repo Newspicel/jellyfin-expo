@@ -2,6 +2,7 @@ import { client } from './generated/client.gen';
 import { useServerStore } from '@/stores/server.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { getDeviceId, getDeviceName, getClientName, getClientVersion } from '@/lib/device';
+import { queryClient } from '@/lib/query-client';
 
 let isInitialized = false;
 let cachedDeviceId: string | null = null;
@@ -20,11 +21,13 @@ export function configureApiClient(): void {
       return request;
     }
 
-    // Build the full URL by prepending server URL to the path
-    const originalUrl = request.url;
-    const fullUrl = originalUrl.startsWith('http')
-      ? originalUrl
-      : `${server.url}${originalUrl.startsWith('/') ? '' : '/'}${originalUrl}`;
+    // The generated client uses baseUrl 'http://localhost', so we need to replace it
+    // with the actual server URL while preserving the path and query string
+    const originalUrl = new URL(request.url);
+    const serverUrl = new URL(server.url);
+
+    // Replace origin (scheme + host) with actual server
+    const fullUrl = `${serverUrl.origin}${originalUrl.pathname}${originalUrl.search}`;
 
     // Create a new request with the modified URL
     const newRequest = new Request(fullUrl, request);
@@ -48,11 +51,14 @@ export function configureApiClient(): void {
   });
 
   client.interceptors.response.use((response) => {
-    // Handle 401 Unauthorized
+    // Handle 401 Unauthorized - kick user out
     if (response.status === 401) {
       const server = useServerStore.getState().getCurrentServer();
       if (server) {
-        useAuthStore.getState().removeCredentials(server.id);
+        // Full logout: clears credentials AND currentUser
+        useAuthStore.getState().logout(server.id);
+        // Clear all cached queries so stale auth data doesn't persist
+        queryClient.clear();
       }
     }
     return response;

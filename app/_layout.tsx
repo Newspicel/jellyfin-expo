@@ -10,6 +10,7 @@ import { queryClient } from '@/lib/query-client';
 import { initializeApiClient, configureApiClient } from '@/api/client';
 import { useAuthStore } from '@/stores/auth.store';
 import { useServerStore } from '@/stores/server.store';
+import { getCurrentUser } from '@/api/generated';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -30,13 +31,30 @@ function AppContent() {
   const colorScheme = useColorScheme();
   const isLoading = useAuthStore((state) => state.isLoading);
   const setIsLoading = useAuthStore((state) => state.setIsLoading);
-  const getCredentials = useAuthStore((state) => state.getCredentials);
+  const credentials = useAuthStore((state) => state.credentials);
   const currentServerId = useServerStore((state) => state.currentServerId);
 
   useEffect(() => {
     async function init() {
       await initializeApiClient();
       configureApiClient();
+
+      // Restore current user if we have credentials
+      const server = useServerStore.getState().getCurrentServer();
+      const creds = server ? useAuthStore.getState().getCredentials(server.id) : null;
+
+      if (creds) {
+        try {
+          const { data: user } = await getCurrentUser();
+          if (user) {
+            useAuthStore.getState().setCurrentUser(user);
+          }
+        } catch {
+          // 401 will be handled by the interceptor which calls logout()
+          // Other errors: just continue to login screen
+        }
+      }
+
       setIsLoading(false);
     }
     init();
@@ -47,7 +65,7 @@ function AppContent() {
   }
 
   // Check if user is authenticated for the current server
-  const hasValidAuth = currentServerId !== null && getCredentials(currentServerId) !== null;
+  const hasValidAuth = currentServerId !== null && credentials[currentServerId] !== undefined;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
