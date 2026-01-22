@@ -180,18 +180,14 @@ export default function LibraryItemsScreen() {
   // Calculate header height for content inset
   const headerHeight = insets.top + 52;
 
-  // Render the header with floating glass back button
-  const renderHeader = (showCount = false) => (
+  // Render the header with floating glass back button and centered title
+  const renderHeader = () => (
     <View style={[styles.headerContainer, { paddingTop: insets.top + spacing.sm }]}>
       <BackButton variant="inline" />
       <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
         {libraryName}
       </ThemedText>
-      {showCount && totalCount !== null && (
-        <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
-          {totalCount}
-        </ThemedText>
-      )}
+      <View style={styles.headerSpacer} />
     </View>
   );
 
@@ -257,7 +253,7 @@ export default function LibraryItemsScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
-      {renderHeader(true)}
+      {renderHeader()}
     </ThemedView>
   );
 }
@@ -275,15 +271,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   headerTitle: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
+    textAlign: 'center',
   },
-  itemCount: {
-    fontSize: 14,
+  headerSpacer: {
+    width: 36, // Match BackButton width for centering
   },
   loadingContainer: {
     flex: 1,
