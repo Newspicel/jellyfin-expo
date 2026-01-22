@@ -420,15 +420,16 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.5 Player Components
 
-- [ ] Create `components/player/video-player.tsx`:
-  - [ ] react-native-video wrapper
-  - [ ] Buffer configuration for streaming
-  - [ ] Hardware acceleration enabled
-- [x] Create `components/player/player-controls.tsx`:
+- [x] Mobile player uses native controls (expo-video with nativeControls={true}):
+  - [x] Platform-native UI (AVPlayerViewController on iOS, system player on Android)
+  - [x] Built-in play/pause, seek, volume (hardware buttons)
+  - [x] Fullscreen and rotation handled by system
+  - [x] PiP support enabled (allowsPictureInPicture)
+  - [x] Skip intro/outro button overlaid on native player
+- [x] Create `components/player/player-controls.tsx` (available for custom use):
   - [x] Play/pause button
   - [x] Seek bar with current/total time (uses SeekBar component)
   - [x] Rewind/fast-forward buttons (10s/30s)
-  - [x] Intro-Skip/Ads/End button (via SkipSegmentButton)
   - [x] Volume control (uses VolumeControl component)
   - [x] Fullscreen toggle
   - [x] Settings button (audio/subtitle selectors)
@@ -469,9 +470,9 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.9 Picture-in-Picture
 
-- [ ] Enable PiP on iOS/Android
-- [ ] Handle PiP lifecycle events
-- [ ] Return to full player on tap
+- [x] Enable PiP on iOS/Android (via allowsPictureInPicture on VideoView)
+- [x] PiP lifecycle handled by native player
+- [x] Return to full player on tap (native behavior)
 
 ### 3.10 Background Audio
 
