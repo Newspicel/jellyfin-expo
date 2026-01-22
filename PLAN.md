@@ -275,7 +275,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] List all user libraries
   - [x] Library type icons
 - [x] Create `app/(tabs)/library/[libraryId].tsx`:
-  - [ ] Grid/list view toggle
+  - [x] Grid/list view toggle
   - [x] Sort options (name, date added, release date, etc.)
   - [x] Filter options (genre, year, etc.)
   - [x] Pagination/infinite scroll

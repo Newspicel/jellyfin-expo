@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
+import { MediaListItem } from '@/components/media/media-list-item';
 import { IconSymbol, BackButton, SortSelector, DEFAULT_SORT_OPTIONS, FilterSelector } from '@/components/ui';
 import type { SortOption, FilterState } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
@@ -24,6 +25,8 @@ import {
 } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto, BaseItemKind } from '@/api/generated';
 import { useColors, spacing } from '@/theme';
+
+type ViewMode = 'grid' | 'list';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HORIZONTAL_PADDING = spacing.md * 2;
@@ -56,6 +59,7 @@ export default function LibraryItemsScreen() {
   const [filterSelectorVisible, setFilterSelectorVisible] = useState(false);
   const [currentSort, setCurrentSort] = useState<SortOption>(DEFAULT_SORT_OPTIONS[0]);
   const [activeFilters, setActiveFilters] = useState<FilterState>({ genres: [], years: [] });
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const { numColumns, cardWidth } = useMemo(() => calculateGridLayout(), []);
 
@@ -163,6 +167,10 @@ export default function LibraryItemsScreen() {
     setAllItems([]);
   }, []);
 
+  const toggleViewMode = useCallback(() => {
+    setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
+  }, []);
+
   const onEndReached = useCallback(() => {
     if (isFetching) return;
     if (totalCount !== null && allItems.length >= totalCount) return;
@@ -173,13 +181,18 @@ export default function LibraryItemsScreen() {
     }
   }, [isFetching, totalCount, allItems.length, startIndex]);
 
-  const renderItem = useCallback(
+  const renderGridItem = useCallback(
     ({ item }: { item: BaseItemDto }) => (
       <View style={[styles.cardWrapper, { width: cardWidth }]}>
         <PosterCard item={item} width={cardWidth} showProgress={true} />
       </View>
     ),
     [cardWidth]
+  );
+
+  const renderListItem = useCallback(
+    ({ item }: { item: BaseItemDto }) => <MediaListItem item={item} showProgress={true} />,
+    []
   );
 
   const keyExtractor = useCallback((item: BaseItemDto) => item.Id ?? '', []);
@@ -197,6 +210,11 @@ export default function LibraryItemsScreen() {
     return null;
   }, [isFetching, allItems.length, colors.text.secondary]);
 
+  const ListItemSeparator = useCallback(
+    () => <View style={[styles.separator, { backgroundColor: colors.border.subtle }]} />,
+    [colors.border.subtle]
+  );
+
   // Calculate header height for content inset
   const headerHeight = insets.top + 52;
 
@@ -210,6 +228,16 @@ export default function LibraryItemsScreen() {
         {libraryName}
       </ThemedText>
       <View style={styles.headerButtons}>
+        <Pressable
+          style={[styles.headerButton, { backgroundColor: colors.background.tertiary }]}
+          onPress={toggleViewMode}
+        >
+          <IconSymbol
+            name={viewMode === 'grid' ? 'list.bullet' : 'square.grid.2x2'}
+            size={18}
+            color={colors.text.primary}
+          />
+        </Pressable>
         <Pressable
           style={[
             styles.headerButton,
@@ -265,19 +293,23 @@ export default function LibraryItemsScreen() {
     );
   }
 
+  const isGridMode = viewMode === 'grid';
+  const effectiveNumColumns = isGridMode ? numColumns : 1;
+
   return (
     <ThemedView style={styles.container}>
       <FlatList
         data={allItems}
-        renderItem={renderItem}
+        renderItem={isGridMode ? renderGridItem : renderListItem}
         keyExtractor={keyExtractor}
-        numColumns={numColumns}
-        key={`grid-${numColumns}`} // Force re-render when columns change
+        numColumns={effectiveNumColumns}
+        key={`${viewMode}-${effectiveNumColumns}`} // Force re-render when view mode or columns change
         contentContainerStyle={[
-          styles.listContent,
+          isGridMode ? styles.listContent : styles.listContentList,
           { paddingTop: headerHeight + spacing.sm, paddingBottom: insets.bottom + 16 },
         ]}
-        columnWrapperStyle={[styles.row, { gap: CARD_GAP }]}
+        columnWrapperStyle={isGridMode ? [styles.row, { gap: CARD_GAP }] : undefined}
+        ItemSeparatorComponent={isGridMode ? undefined : ListItemSeparator}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -395,11 +427,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
+  listContentList: {
+    // No horizontal padding for list view - handled by MediaListItem
+    paddingTop: spacing.sm,
+  },
   row: {
     marginBottom: spacing.md,
   },
   cardWrapper: {
     // Width is set dynamically
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 80 + spacing.md * 2, // Align with content, not poster
   },
   footerLoader: {
     paddingVertical: spacing.lg,
