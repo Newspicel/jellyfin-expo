@@ -39,6 +39,7 @@ Priority order:
 ```bash
 bun run lint        # Must pass with no errors
 bunx tsc --noEmit   # Must compile cleanly
+bunx eslint         # Must pass with no errors
 ```
 
 ### 4. Mark Complete
