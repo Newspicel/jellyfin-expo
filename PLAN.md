@@ -255,17 +255,17 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.2 Home Screen
 
-- [ ] Create `app/(tabs)/index.tsx` with sections:
-  - [ ] Continue Watching row (resume items)
-  - [ ] Next Up row (next episodes)
-  - [ ] Latest Movies row
-  - [ ] Latest TV Shows row
+- [x] Create `app/(tabs)/index.tsx` with sections:
+  - [x] Continue Watching row (resume items)
+  - [x] Next Up row (next episodes)
+  - [x] Latest Movies row
+  - [x] Latest TV Shows row
   - [ ] Recommendations row
-- [ ] Implement horizontal scrolling rows
-- [ ] Implement poster cards with:
-  - [ ] Image loading with expo-image
-  - [ ] Title overlay
-  - [ ] Progress bar for in-progress items
+- [x] Implement horizontal scrolling rows
+- [x] Implement poster cards with:
+  - [x] Image loading with expo-image
+  - [x] Title overlay
+  - [x] Progress bar for in-progress items
   - [ ] TV focus states
 
 ### 2.3 Library Browser
@@ -286,18 +286,18 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.4 Media Components
 
-- [ ] Create `components/media/poster-card.tsx`:
-  - [ ] Image with aspect ratio
-  - [ ] Title
-  - [ ] Year/rating
-  - [ ] Watched indicator
+- [x] Create `components/media/poster-card.tsx`:
+  - [x] Image with aspect ratio
+  - [x] Title
+  - [x] Year/rating
+  - [x] Watched indicator
 - [ ] Create `components/media/poster-card.tv.tsx`:
   - [ ] Focus scaling animation
   - [ ] Focus border/glow
   - [ ] Parallax effect on focus
-- [ ] Create `components/media/media-row.tsx`:
-  - [ ] Horizontal scroll
-  - [ ] Row title
+- [x] Create `components/media/media-row.tsx`:
+  - [x] Horizontal scroll
+  - [x] Row title
   - [ ] "See All" link
 - [ ] Create `components/media/media-grid.tsx`:
   - [ ] Responsive column count
