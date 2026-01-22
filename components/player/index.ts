@@ -32,3 +32,4 @@
 
 export { SubtitleSelector, type SubtitleSelectorProps } from './subtitle-selector';
 export { AudioSelector, type AudioSelectorProps } from './audio-selector';
+export { ResumeDialog, type ResumeDialogProps } from './resume-dialog';

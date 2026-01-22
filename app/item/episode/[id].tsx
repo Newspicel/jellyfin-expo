@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol, BackButton } from '@/components/ui';
+import { ResumeDialog } from '@/components/player';
 import {
   getItemOptions,
   getEpisodesOptions,
@@ -105,6 +106,7 @@ export default function EpisodeDetailScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
 
   // Fetch episode details
   const {
@@ -168,8 +170,39 @@ export default function EpisodeDetailScreen() {
     setRefreshing(false);
   }, [refetch]);
 
+  // Check if item has significant playback progress (> 5% and < 95%)
+  const hasResumableProgress = useCallback(() => {
+    const positionTicks = item?.UserData?.PlaybackPositionTicks;
+    const durationTicks = item?.RunTimeTicks;
+    if (!positionTicks || !durationTicks) return false;
+
+    const percentWatched = (positionTicks / durationTicks) * 100;
+    // Show resume dialog if between 5% and 95% watched
+    return percentWatched > 5 && percentWatched < 95;
+  }, [item]);
+
   const handlePlay = useCallback(() => {
     if (!id) return;
+
+    // Check if we should show resume dialog
+    if (hasResumableProgress()) {
+      setShowResumeDialog(true);
+    } else {
+      // Start from beginning
+      router.push(`/(player)/${id}`);
+    }
+  }, [id, router, hasResumableProgress]);
+
+  const handleResume = useCallback(() => {
+    if (!id) return;
+    setShowResumeDialog(false);
+    const positionTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
+    router.push(`/(player)/${id}?startTimeTicks=${positionTicks}`);
+  }, [id, router, item?.UserData?.PlaybackPositionTicks]);
+
+  const handleStartOver = useCallback(() => {
+    if (!id) return;
+    setShowResumeDialog(false);
     router.push(`/(player)/${id}`);
   }, [id, router]);
 
@@ -503,6 +536,17 @@ export default function EpisodeDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Resume Dialog */}
+      <ResumeDialog
+        visible={showResumeDialog}
+        positionTicks={item?.UserData?.PlaybackPositionTicks ?? 0}
+        durationTicks={item?.RunTimeTicks ?? undefined}
+        title={item?.SeriesName ? `${item.SeriesName} - ${episodeIdentifier}` : item?.Name ?? undefined}
+        onResume={handleResume}
+        onStartOver={handleStartOver}
+        onClose={() => setShowResumeDialog(false)}
+      />
     </ThemedView>
   );
 }
