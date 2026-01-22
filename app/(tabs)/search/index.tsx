@@ -1,4 +1,4 @@
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Keyboard, ScrollView, StyleSheet } from 'react-native';
 import type { SearchBarCommands } from 'react-native-screens';
@@ -12,24 +12,13 @@ export default function SearchScreen() {
   const setQuery = useSearchStore((s) => s.setQuery);
   const hasQuery = query.trim().length > 0;
   const navigation = useNavigation();
-  const router = useRouter();
   const searchBarRef = useRef<SearchBarCommands | null>(null);
   const [isSearching, setIsSearching] = useState(true);
-
-  const handleCancel = useCallback(() => {
-    setQuery('');
-    setIsSearching(true);
-    router.back();
-  }, [router, setQuery]);
 
   const handleSearchSubmit = useCallback(() => {
     setIsSearching(false);
     Keyboard.dismiss();
     searchBarRef.current?.blur();
-    // Hide cancel button after blur
-    setTimeout(() => {
-      searchBarRef.current?.toggleCancelButton(false);
-    }, 100);
   }, []);
 
   // Set up search bar options with ref
@@ -39,6 +28,8 @@ export default function SearchScreen() {
         headerSearchBarOptions: {
           ref: searchBarRef as React.RefObject<SearchBarCommands>,
           placeholder: 'Search movies, shows, and more',
+          hideWhenScrolling: false,
+          hideNavigationBar: false,
           onChangeText: (e: { nativeEvent: { text: string } }) => {
             setQuery(e.nativeEvent.text);
             if (!isSearching) {
@@ -46,8 +37,6 @@ export default function SearchScreen() {
             }
           },
           onSearchButtonPress: handleSearchSubmit,
-          onCancelButtonPress: handleCancel,
-          onClose: handleCancel,
           onFocus: () => setIsSearching(true),
         },
       });
@@ -56,11 +45,10 @@ export default function SearchScreen() {
       if (isSearching) {
         const timer = setTimeout(() => {
           searchBarRef.current?.focus();
-          searchBarRef.current?.toggleCancelButton(true);
         }, 50);
         return () => clearTimeout(timer);
       }
-    }, [navigation, setQuery, handleCancel, handleSearchSubmit, isSearching])
+    }, [navigation, setQuery, handleSearchSubmit, isSearching])
   );
 
   if (!hasQuery) {
