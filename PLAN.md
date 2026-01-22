@@ -728,14 +728,23 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 7.1 iOS - Liquid Glass Design
 
-- [ ] Install expo-blur for glass effects:
+- [x] Install expo-glass-effect for native iOS 26+ Liquid Glass:
   ```bash
-  npx expo install expo-blur
+  npx expo install expo-glass-effect
   ```
-- [ ] Create `components/themed/glass-view.tsx`:
-  - [ ] BlurView with tint
-  - [ ] Translucent backgrounds
-  - [ ] Vibrancy effects
+- [x] Create unified styling system (`theme/`):
+  - [x] Design tokens (spacing, colors, typography, shadows)
+  - [x] Platform detection utilities
+  - [x] Glass effect configurations
+  - [x] Theme hooks (useTheme, useColors, etc.)
+- [x] Create `components/themed/GlassView.tsx`:
+  - [x] Native Liquid Glass on iOS 26+
+  - [x] BlurView fallback for older iOS/other platforms
+  - [x] Multiple glass styles (clear, regular, prominent, navigation, etc.)
+  - [x] Vibrancy effects via tint colors
+- [x] Create `components/themed/GlassCard.tsx`:
+  - [x] Card component with glass styling
+  - [x] Size presets and shadow support
 - [ ] Apply Liquid Glass to:
   - [ ] Navigation bars
   - [ ] Tab bar

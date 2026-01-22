@@ -1,31 +1,48 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Theme constants for Jellyfin Expo
+ *
+ * This file maintains backwards compatibility with existing code
+ * while using the new unified styling system under the hood.
+ *
+ * For new code, prefer importing from '@/theme' directly:
+ * import { useTheme, colors, spacing } from '@/theme';
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+import { colors as themeColors, brand } from '@/theme/colors';
+
+// =============================================================================
+// LEGACY COLOR EXPORTS
+// Kept for backwards compatibility with existing code
+// =============================================================================
+
+const tintColorLight = brand.primary;
 const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: themeColors.light.text.primary,
+    background: themeColors.light.background.primary,
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: themeColors.light.text.secondary,
+    tabIconDefault: themeColors.light.nav.inactive,
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: themeColors.dark.text.primary,
+    background: themeColors.dark.background.primary,
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: themeColors.dark.text.secondary,
+    tabIconDefault: themeColors.dark.nav.inactive,
     tabIconSelected: tintColorDark,
   },
 };
+
+// =============================================================================
+// FONT FAMILIES
+// Platform-specific system fonts
+// =============================================================================
 
 export const Fonts = Platform.select({
   ios: {
@@ -51,3 +68,26 @@ export const Fonts = Platform.select({
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
+
+// =============================================================================
+// RE-EXPORTS FROM NEW THEME SYSTEM
+// =============================================================================
+
+export {
+  brand,
+  palette,
+  colors,
+  lightColors,
+  darkColors,
+} from '@/theme/colors';
+
+export {
+  spacing,
+  radii,
+  fontSizes,
+  fontWeights,
+  shadows,
+  animation,
+  sizes,
+  opacity,
+} from '@/theme/tokens';

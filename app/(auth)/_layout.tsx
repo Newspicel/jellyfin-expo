@@ -7,7 +7,12 @@ export default function AuthLayout() {
         headerShown: true,
         headerLargeTitle: true,
         headerTransparent: true,
-        headerBlurEffect: 'systemMaterial',
+        headerBlurEffect: 'systemChromeMaterial',
+        headerLargeTitleShadowVisible: false,
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: 'transparent',
+        },
       }}
     >
       <Stack.Screen

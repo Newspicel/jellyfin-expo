@@ -15,6 +15,17 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
+// Shared screen options for Liquid Glass effect
+const liquidGlassScreenOptions = {
+  headerTransparent: true,
+  headerBlurEffect: 'systemChromeMaterial' as const,
+  headerLargeTitleShadowVisible: false,
+  headerShadowVisible: false,
+  headerStyle: {
+    backgroundColor: 'transparent',
+  },
+};
+
 function AppContent() {
   const colorScheme = useColorScheme();
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -40,7 +51,11 @@ function AppContent() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          ...liquidGlassScreenOptions,
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} redirect={!hasValidAuth} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} redirect={hasValidAuth} />
         <Stack.Screen
@@ -51,8 +66,16 @@ function AppContent() {
             animation: 'fade',
           }}
         />
-        <Stack.Screen name="item" options={{ headerShown: true }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="item" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="modal"
+          options={{
+            presentation: 'modal',
+            title: 'Modal',
+            headerShown: true,
+            ...liquidGlassScreenOptions,
+          }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

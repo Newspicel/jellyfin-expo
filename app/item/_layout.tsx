@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-export default function LibraryLayout() {
+export default function ItemLayout() {
   return (
     <Stack
       screenOptions={{
@@ -16,13 +16,25 @@ export default function LibraryLayout() {
       }}
     >
       <Stack.Screen
-        name="index"
+        name="movie/[id]"
         options={{
-          title: 'Library',
+          title: '',
         }}
       />
       <Stack.Screen
-        name="[libraryId]"
+        name="series/[id]"
+        options={{
+          title: '',
+        }}
+      />
+      <Stack.Screen
+        name="season/[id]"
+        options={{
+          title: '',
+        }}
+      />
+      <Stack.Screen
+        name="episode/[id]"
         options={{
           title: '',
         }}
