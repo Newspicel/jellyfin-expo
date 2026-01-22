@@ -1,4 +1,5 @@
 import { useServerStore } from '@/stores/server.store';
+import { useAuthStore } from '@/stores/auth.store';
 import type { BaseItemDto, ImageType } from '@/api/generated';
 
 interface ImageUrlOptions {
@@ -15,6 +16,7 @@ export function getImageUrl(
   const server = useServerStore.getState().getCurrentServer();
   if (!server || !item.Id) return null;
 
+  const credentials = useAuthStore.getState().getCredentials(server.id);
   const { maxWidth = 300, maxHeight, quality = 90 } = options;
 
   // Get the appropriate image tag and item ID
@@ -71,17 +73,8 @@ export function getImageUrl(
     }
   }
 
-  // If no image info found, still try to load (server might have it)
-  // But prefer returning null if we're certain there's no image
-  if (!hasImage && !imageTag) {
-    // Check if there's any primary image available by looking at ImageTags
-    if (imageType === 'Primary' && !item.ImageTags?.Primary) {
-      // Try anyway - some items have images without tags in response
-      hasImage = true;
-    } else {
-      return null;
-    }
-  }
+  // Always try to load the image - the server will return 404 if it doesn't exist
+  // This is simpler and more reliable than trying to detect if an image exists
 
   const params = new URLSearchParams({
     quality: quality.toString(),
@@ -95,6 +88,11 @@ export function getImageUrl(
 
   if (maxHeight) {
     params.set('maxHeight', maxHeight.toString());
+  }
+
+  // Add API token for authentication
+  if (credentials?.accessToken) {
+    params.set('api_key', credentials.accessToken);
   }
 
   return `${server.url}/Items/${itemId}/Images/${imageType}?${params.toString()}`;
@@ -120,11 +118,17 @@ export function getPersonImageUrl(
   const server = useServerStore.getState().getCurrentServer();
   if (!server || !personId || !imageTag) return null;
 
+  const credentials = useAuthStore.getState().getCredentials(server.id);
   const params = new URLSearchParams({
     tag: imageTag,
     quality: '90',
     maxWidth: maxWidth.toString(),
   });
+
+  // Add API token for authentication
+  if (credentials?.accessToken) {
+    params.set('api_key', credentials.accessToken);
+  }
 
   return `${server.url}/Items/${personId}/Images/Primary?${params.toString()}`;
 }

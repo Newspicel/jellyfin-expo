@@ -21,7 +21,7 @@ import {
   getItemsOptions,
   getItemOptions,
 } from '@/api/generated/@tanstack/react-query.gen';
-import type { BaseItemDto } from '@/api/generated';
+import type { BaseItemDto, BaseItemKind } from '@/api/generated';
 import { useColors, spacing } from '@/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -55,13 +55,29 @@ export default function LibraryItemsScreen() {
 
   const { numColumns, cardWidth } = useMemo(() => calculateGridLayout(), []);
 
-  // Fetch the library info to get the name
+  // Fetch the library info to get the name and collection type
   const { data: libraryInfo } = useQuery({
     ...getItemOptions({
       path: { itemId: libraryId! },
     }),
     enabled: !!libraryId && !!currentUser?.Id,
   });
+
+  // Determine includeItemTypes based on library collection type
+  const includeItemTypes = useMemo((): BaseItemKind[] | undefined => {
+    switch (libraryInfo?.CollectionType) {
+      case 'movies':
+        return ['Movie'];
+      case 'tvshows':
+        return ['Series'];
+      case 'music':
+        return ['MusicAlbum'];
+      case 'boxsets':
+        return ['BoxSet'];
+      default:
+        return undefined; // Don't filter, show all direct children
+    }
+  }, [libraryInfo?.CollectionType]);
 
   // Manual pagination state
   const [startIndex, setStartIndex] = useState(0);
@@ -77,10 +93,13 @@ export default function LibraryItemsScreen() {
   } = useQuery({
     ...getItemsOptions({
       query: {
+        userId: currentUser?.Id,
         parentId: libraryId,
         sortBy: ['SortName'],
         sortOrder: ['Ascending'],
         recursive: false,
+        includeItemTypes: includeItemTypes,
+        fields: ['PrimaryImageAspectRatio'],
         enableImages: true,
         enableImageTypes: ['Primary', 'Backdrop', 'Thumb'],
         imageTypeLimit: 1,
