@@ -463,8 +463,8 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 - [x] Resume from last position on play
 - [x] Show resume dialog if position > 5%
-- [ ] Auto-play next episode option
-- [ ] Next episode overlay at end of playback
+- [x] Auto-play next episode option
+- [x] Next episode overlay at end of playback
 - [ ] Skip intro button (if intro data available)
 
 ### 3.9 Picture-in-Picture

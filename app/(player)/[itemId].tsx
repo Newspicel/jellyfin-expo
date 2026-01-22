@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { usePlayback } from '@/hooks/use-playback';
 import { useProgressReporting } from '@/hooks/use-progress-reporting';
-import { getItemOptions } from '@/api/generated/@tanstack/react-query.gen';
+import { getItemOptions, getEpisodesOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
-import { SubtitleSelector, AudioSelector } from '@/components/player';
+import { SubtitleSelector, AudioSelector, NextEpisodeOverlay } from '@/components/player';
 
 // Hide controls after inactivity (ms)
 const CONTROLS_HIDE_DELAY = 4000;
@@ -39,6 +39,7 @@ export default function PlayerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showSubtitleSelector, setShowSubtitleSelector] = useState(false);
   const [showAudioSelector, setShowAudioSelector] = useState(false);
+  const [showNextEpisode, setShowNextEpisode] = useState(false);
 
   // Time tracking state (updated via events)
   const [currentTime, setCurrentTime] = useState(0);
@@ -55,6 +56,30 @@ export default function PlayerScreen() {
     }),
     enabled: !!itemId,
   });
+
+  // Fetch adjacent episodes for next episode feature (only for episodes)
+  const { data: adjacentEpisodes } = useQuery({
+    ...getEpisodesOptions({
+      path: { seriesId: item?.SeriesId ?? '' },
+      query: {
+        seasonId: item?.SeasonId ?? undefined,
+        adjacentTo: itemId!,
+        fields: ['Overview', 'PrimaryImageAspectRatio'],
+      },
+    }),
+    enabled: !!itemId && !!item?.SeriesId && item?.Type === 'Episode',
+  });
+
+  // Find the next episode from adjacent data
+  const nextEpisode = useMemo(() => {
+    if (!adjacentEpisodes?.Items || !itemId) return null;
+    const episodes = adjacentEpisodes.Items;
+    const currentIndex = episodes.findIndex((e) => e.Id === itemId);
+    if (currentIndex >= 0 && currentIndex < episodes.length - 1) {
+      return episodes[currentIndex + 1];
+    }
+    return null;
+  }, [adjacentEpisodes?.Items, itemId]);
 
   // Fetch playback info using the hook
   const {
@@ -102,6 +127,10 @@ export default function PlayerScreen() {
   useEventListener(player, 'playToEnd', () => {
     player.pause();
     setShowControls(true);
+    // Show next episode overlay if there's a next episode
+    if (nextEpisode?.Id) {
+      setShowNextEpisode(true);
+    }
   });
 
   // Report playback progress to Jellyfin server
@@ -200,6 +229,19 @@ export default function PlayerScreen() {
     },
     [setAudioTrack, resetHideTimer]
   );
+
+  // Next episode handlers
+  const handlePlayNextEpisode = useCallback(() => {
+    if (nextEpisode?.Id) {
+      setShowNextEpisode(false);
+      // Navigate to the next episode
+      router.replace(`/(player)/${nextEpisode.Id}`);
+    }
+  }, [nextEpisode?.Id, router]);
+
+  const handleCancelNextEpisode = useCallback(() => {
+    setShowNextEpisode(false);
+  }, []);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -417,6 +459,17 @@ export default function PlayerScreen() {
         onSelect={handleAudioSelect}
         onClose={() => setShowAudioSelector(false)}
       />
+
+      {/* Next Episode Overlay */}
+      {nextEpisode && (
+        <NextEpisodeOverlay
+          visible={showNextEpisode}
+          nextEpisode={nextEpisode}
+          countdownSeconds={10}
+          onPlayNext={handlePlayNextEpisode}
+          onCancel={handleCancelNextEpisode}
+        />
+      )}
     </View>
   );
 }
