@@ -397,14 +397,14 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.3 Playback Info & Stream Selection
 
-- [ ] Create `hooks/use-playback.ts`:
-  - [ ] Fetch playback info with device profile
-  - [ ] Select best media source
-  - [ ] Build stream URL based on play method
-- [ ] Implement stream URL builder:
-  - [ ] Direct Play: `/Videos/{id}/stream?static=true`
-  - [ ] Direct Stream: `/Videos/{id}/stream`
-  - [ ] Transcode: `/Videos/{id}/master.m3u8`
+- [x] Create `hooks/use-playback.ts`:
+  - [x] Fetch playback info with device profile
+  - [x] Select best media source
+  - [x] Build stream URL based on play method
+- [x] Implement stream URL builder:
+  - [x] Direct Play: `/Videos/{id}/stream?static=true`
+  - [x] Direct Stream: `/Videos/{id}/stream`
+  - [x] Transcode: Uses `TranscodingUrl` from server response
 
 ### 3.4 Player Screen
 
