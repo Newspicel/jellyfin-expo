@@ -2,11 +2,11 @@ import { useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
-  FlatList,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import type { BaseItemDto } from '@/api/generated';
 import { PosterCard } from './poster-card';
 import { ThemedText } from '@/components/themed-text';
@@ -124,11 +124,11 @@ export function MediaGrid({
 
   const renderItem = useCallback(
     ({ item }: { item: BaseItemDto }) => (
-      <View style={[styles.cardWrapper, { width: cardWidth }]}>
-        <PosterCard item={item} width={cardWidth} showProgress={showProgress} />
+      <View style={[styles.cardWrapper, { width: cardWidth, paddingHorizontal: cardGap / 2, paddingBottom: cardGap }]}>
+        <PosterCard item={item} width={cardWidth - cardGap} showProgress={showProgress} />
       </View>
     ),
-    [cardWidth, showProgress]
+    [cardWidth, cardGap, showProgress]
   );
 
   const keyExtractor = useCallback((item: BaseItemDto) => item.Id ?? '', []);
@@ -168,18 +168,16 @@ export function MediaGrid({
   }
 
   return (
-    <FlatList
+    <FlashList
       data={items}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       numColumns={numColumns}
-      key={`grid-${numColumns}`} // Force re-render when columns change
       contentContainerStyle={[
         styles.listContent,
-        { paddingHorizontal: horizontalPadding / 2, paddingTop, paddingBottom },
+        { paddingHorizontal: (horizontalPadding - cardGap) / 2, paddingTop, paddingBottom },
         contentContainerStyle,
       ]}
-      columnWrapperStyle={[styles.row, { gap: cardGap }]}
       refreshControl={
         onRefresh ? (
           <RefreshControl
@@ -209,11 +207,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: spacing.sm,
   },
-  row: {
-    marginBottom: spacing.md,
-  },
   cardWrapper: {
-    // Width is set dynamically
+    // Width, padding are set dynamically
   },
   footerLoader: {
     paddingVertical: spacing.lg,

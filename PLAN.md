@@ -279,7 +279,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Sort options (name, date added, release date, etc.)
   - [x] Filter options (genre, year, etc.)
   - [x] Pagination/infinite scroll
-- [ ] Install and configure FlashList:
+- [x] Install and configure FlashList:
   ```bash
   npm install @shopify/flash-list
   ```

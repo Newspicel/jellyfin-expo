@@ -2,12 +2,12 @@ import { useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
-  FlatList,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
   Pressable,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -183,8 +183,8 @@ export default function LibraryItemsScreen() {
 
   const renderGridItem = useCallback(
     ({ item }: { item: BaseItemDto }) => (
-      <View style={[styles.cardWrapper, { width: cardWidth }]}>
-        <PosterCard item={item} width={cardWidth} showProgress={true} />
+      <View style={[styles.cardWrapper, { width: cardWidth, paddingHorizontal: CARD_GAP / 2, paddingBottom: CARD_GAP }]}>
+        <PosterCard item={item} width={cardWidth - CARD_GAP} showProgress={true} />
       </View>
     ),
     [cardWidth]
@@ -298,17 +298,15 @@ export default function LibraryItemsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <FlatList
+      <FlashList
         data={allItems}
         renderItem={isGridMode ? renderGridItem : renderListItem}
         keyExtractor={keyExtractor}
         numColumns={effectiveNumColumns}
-        key={`${viewMode}-${effectiveNumColumns}`} // Force re-render when view mode or columns change
         contentContainerStyle={[
           isGridMode ? styles.listContent : styles.listContentList,
           { paddingTop: headerHeight + spacing.sm, paddingBottom: insets.bottom + 16 },
         ]}
-        columnWrapperStyle={isGridMode ? [styles.row, { gap: CARD_GAP }] : undefined}
         ItemSeparatorComponent={isGridMode ? undefined : ListItemSeparator}
         refreshControl={
           <RefreshControl
@@ -424,18 +422,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.md - CARD_GAP / 2,
     paddingTop: spacing.sm,
   },
   listContentList: {
     // No horizontal padding for list view - handled by MediaListItem
     paddingTop: spacing.sm,
   },
-  row: {
-    marginBottom: spacing.md,
-  },
   cardWrapper: {
-    // Width is set dynamically
+    // Width, padding are set dynamically
   },
   separator: {
     height: StyleSheet.hairlineWidth,
