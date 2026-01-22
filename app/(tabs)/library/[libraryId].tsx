@@ -5,17 +5,17 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Pressable,
   Dimensions,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BackButton } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   getItemsOptions,
@@ -47,7 +47,6 @@ const PAGE_SIZE = 50;
 
 export default function LibraryItemsScreen() {
   const { libraryId } = useLocalSearchParams<{ libraryId: string }>();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore((s) => s.currentUser);
   const colors = useColors();
@@ -182,16 +181,7 @@ export default function LibraryItemsScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <IconSymbol
-              name="chevron.left"
-              size={24}
-              color={colors.interactive.primary}
-            />
-          </Pressable>
+          <BackButton variant="inline" />
           <ThemedText type="title" style={styles.headerTitle}>
             {libraryName}
           </ThemedText>
@@ -207,16 +197,7 @@ export default function LibraryItemsScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <IconSymbol
-              name="chevron.left"
-              size={24}
-              color={colors.interactive.primary}
-            />
-          </Pressable>
+          <BackButton variant="inline" />
           <ThemedText type="title" style={styles.headerTitle}>
             {libraryName}
           </ThemedText>
@@ -238,13 +219,7 @@ export default function LibraryItemsScreen() {
           { paddingTop: insets.top + 8, backgroundColor: colors.background.primary },
         ]}
       >
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.interactive.primary}
-          />
-        </Pressable>
+        <BackButton variant="inline" />
         <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
           {libraryName}
         </ThemedText>
@@ -304,10 +279,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
-  },
-  backButton: {
-    padding: spacing.xs,
-    marginLeft: -spacing.xs,
   },
   headerTitle: {
     flex: 1,
