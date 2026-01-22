@@ -429,7 +429,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Seek bar with current/total time (components/player/seek-bar.tsx - draggable)
   - [x] Rewind/fast-forward buttons (10s/30s) (implemented inline in player screen)
   - [ ] Intro-Skip/Ads/End button
-  - [ ] Volume control
+  - [x] Volume control
   - [ ] Fullscreen toggle
   - [x] Settings button (quality, subtitles, audio) (separate selectors)
   - [x] Auto-hide after inactivity (implemented inline in player screen)

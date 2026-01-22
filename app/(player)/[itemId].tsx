@@ -19,7 +19,7 @@ import { getItemOptions, getEpisodesOptions } from '@/api/generated/@tanstack/re
 import type { BaseItemDto } from '@/api/generated';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
-import { SubtitleSelector, AudioSelector, NextEpisodeOverlay, SeekBar } from '@/components/player';
+import { SubtitleSelector, AudioSelector, NextEpisodeOverlay, SeekBar, VolumeControl } from '@/components/player';
 
 // Hide controls after inactivity (ms)
 const CONTROLS_HIDE_DELAY = 4000;
@@ -45,6 +45,10 @@ export default function PlayerScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
+
+  // Volume state
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Controls auto-hide timer
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,6 +149,8 @@ export default function PlayerScreen() {
     isReady: !isBuffering && !!playbackInfo,
     audioStreamIndex: playbackInfo?.selectedAudioIndex,
     subtitleStreamIndex: playbackInfo?.selectedSubtitleIndex,
+    volumeLevel: Math.round(volume * 100),
+    isMuted,
     enabled: !!playbackInfo,
   });
 
@@ -203,6 +209,25 @@ export default function PlayerScreen() {
   const seekToTime = useCallback(
     (time: number) => {
       player.currentTime = time;
+      resetHideTimer();
+    },
+    [player, resetHideTimer]
+  );
+
+  // Volume control handlers
+  const handleVolumeChange = useCallback(
+    (newVolume: number) => {
+      player.volume = newVolume;
+      setVolume(newVolume);
+      resetHideTimer();
+    },
+    [player, resetHideTimer]
+  );
+
+  const handleMutedChange = useCallback(
+    (muted: boolean) => {
+      player.muted = muted;
+      setIsMuted(muted);
       resetHideTimer();
     },
     [player, resetHideTimer]
@@ -434,14 +459,24 @@ export default function PlayerScreen() {
             </Pressable>
           </View>
 
-          {/* Bottom bar - Progress and time */}
+          {/* Bottom bar - Progress, time, and volume */}
           <View style={styles.bottomBar}>
-            <SeekBar
-              currentTime={currentTime}
-              duration={duration}
-              onSeek={seekToTime}
-              onSeekStart={handleSeekStart}
-              onSeekEnd={handleSeekEnd}
+            <View style={styles.seekBarContainer}>
+              <SeekBar
+                currentTime={currentTime}
+                duration={duration}
+                onSeek={seekToTime}
+                onSeekStart={handleSeekStart}
+                onSeekEnd={handleSeekEnd}
+              />
+            </View>
+            <VolumeControl
+              volume={volume}
+              muted={isMuted}
+              onVolumeChange={handleVolumeChange}
+              onMutedChange={handleMutedChange}
+              onInteractionStart={handleSeekStart}
+              onInteractionEnd={handleSeekEnd}
             />
           </View>
         </SafeAreaView>
@@ -596,9 +631,15 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: Platform.OS === 'ios' ? 8 : 16,
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingTop: 12,
+    gap: 12,
+  },
+  seekBarContainer: {
+    flex: 1,
   },
 });

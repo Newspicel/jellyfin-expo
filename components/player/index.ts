@@ -35,4 +35,5 @@ export { AudioSelector, type AudioSelectorProps } from './audio-selector';
 export { ResumeDialog, type ResumeDialogProps } from './resume-dialog';
 export { NextEpisodeOverlay, type NextEpisodeOverlayProps } from './next-episode-overlay';
 export { SeekBar } from './seek-bar';
+export { VolumeControl, type VolumeControlProps } from './volume-control';
 export { TVPlayerControls, type TVPlayerControlsProps } from './player-controls.tv';
