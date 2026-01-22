@@ -16,6 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BackButton } from '@/components/ui';
+import { GlassView } from '@/components/themed/GlassView';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   getItemsOptions,
@@ -177,16 +178,33 @@ export default function LibraryItemsScreen() {
     return null;
   }, [isFetching, allItems.length, colors.text.secondary]);
 
+  // Calculate header height for content inset
+  const headerHeight = insets.top + 52;
+
+  // Render the glass header
+  const renderHeader = (showCount = false) => (
+    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
+      <GlassView glassStyle="regular" borderRadius="xl" style={styles.headerGlass}>
+        <View style={styles.headerContent}>
+          <BackButton variant="inline" />
+          <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
+            {libraryName}
+          </ThemedText>
+          {showCount && totalCount !== null && (
+            <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
+              {totalCount}
+            </ThemedText>
+          )}
+        </View>
+      </GlassView>
+    </View>
+  );
+
   if (isLoadingPage && allItems.length === 0) {
     return (
       <ThemedView style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <BackButton variant="inline" />
-          <ThemedText type="title" style={styles.headerTitle}>
-            {libraryName}
-          </ThemedText>
-        </View>
-        <View style={styles.loadingContainer}>
+        {renderHeader()}
+        <View style={[styles.loadingContainer, { paddingTop: headerHeight }]}>
           <ActivityIndicator size="large" color={colors.text.secondary} />
         </View>
       </ThemedView>
@@ -196,13 +214,8 @@ export default function LibraryItemsScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <BackButton variant="inline" />
-          <ThemedText type="title" style={styles.headerTitle}>
-            {libraryName}
-          </ThemedText>
-        </View>
-        <View style={styles.errorContainer}>
+        {renderHeader()}
+        <View style={[styles.errorContainer, { paddingTop: headerHeight }]}>
           <ThemedText style={{ color: colors.text.secondary }}>
             Failed to load items
           </ThemedText>
@@ -213,23 +226,6 @@ export default function LibraryItemsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, backgroundColor: colors.background.primary },
-        ]}
-      >
-        <BackButton variant="inline" />
-        <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
-          {libraryName}
-        </ThemedText>
-        {totalCount !== null && (
-          <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
-            {totalCount} items
-          </ThemedText>
-        )}
-      </View>
-
       <FlatList
         data={allItems}
         renderItem={renderItem}
@@ -238,7 +234,7 @@ export default function LibraryItemsScreen() {
         key={`grid-${numColumns}`} // Force re-render when columns change
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 16 },
+          { paddingTop: headerHeight + spacing.sm, paddingBottom: insets.bottom + 16 },
         ]}
         columnWrapperStyle={[styles.row, { gap: CARD_GAP }]}
         refreshControl={
@@ -246,6 +242,7 @@ export default function LibraryItemsScreen() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={colors.text.secondary}
+            progressViewOffset={headerHeight}
           />
         }
         onEndReached={onEndReached}
@@ -265,6 +262,7 @@ export default function LibraryItemsScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
+      {renderHeader(true)}
     </ThemedView>
   );
 }
@@ -273,19 +271,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
+  },
+  headerGlass: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   headerTitle: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '600',
   },
   itemCount: {
-    fontSize: 14,
+    fontSize: 13,
+    paddingRight: spacing.xs,
   },
   loadingContainer: {
     flex: 1,
