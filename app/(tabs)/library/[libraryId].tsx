@@ -16,7 +16,6 @@ import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BackButton } from '@/components/ui';
-import { GlassView } from '@/components/themed/GlassView';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   getItemsOptions,
@@ -181,22 +180,18 @@ export default function LibraryItemsScreen() {
   // Calculate header height for content inset
   const headerHeight = insets.top + 52;
 
-  // Render the glass header
+  // Render the header with floating glass back button
   const renderHeader = (showCount = false) => (
-    <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
-      <GlassView glassStyle="regular" borderRadius="xl" style={styles.headerGlass}>
-        <View style={styles.headerContent}>
-          <BackButton variant="inline" />
-          <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
-            {libraryName}
-          </ThemedText>
-          {showCount && totalCount !== null && (
-            <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
-              {totalCount}
-            </ThemedText>
-          )}
-        </View>
-      </GlassView>
+    <View style={[styles.headerContainer, { paddingTop: insets.top + spacing.sm }]}>
+      <BackButton variant="inline" />
+      <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
+        {libraryName}
+      </ThemedText>
+      {showCount && totalCount !== null && (
+        <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
+          {totalCount}
+        </ThemedText>
+      )}
     </View>
   );
 
@@ -277,26 +272,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerGlass: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
   },
   headerTitle: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
   },
   itemCount: {
-    fontSize: 13,
-    paddingRight: spacing.xs,
+    fontSize: 14,
   },
   loadingContainer: {
     flex: 1,
