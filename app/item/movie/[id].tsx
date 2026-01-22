@@ -27,7 +27,7 @@ import {
   unmarkFavoriteItemMutation,
 } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemPerson } from '@/api/generated';
-import { getBackdropImageUrl, getPrimaryImageUrl } from '@/lib/images';
+import { getBackdropImageUrl, getPrimaryImageUrl, getPersonImageUrl } from '@/lib/images';
 import { useColors, spacing, radii } from '@/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -44,17 +44,24 @@ function formatRuntime(ticks: number | null | undefined): string {
   return `${minutes}m`;
 }
 
+function formatOverview(text: string | null | undefined): string {
+  if (!text) return '';
+  // Replace <br>, <br/>, <br /> with newlines
+  return text.replace(/<br\s*\/?>/gi, '\n');
+}
+
 function PersonCard({ person }: { person: BaseItemPerson }) {
   const colors = useColors();
+  const personImageUrl = person.Id
+    ? getPersonImageUrl(person.Id, person.PrimaryImageTag, 150)
+    : null;
 
   return (
     <View style={styles.personCard}>
       <View style={[styles.personImage, { backgroundColor: colors.background.tertiary }]}>
-        {person.PrimaryImageTag ? (
+        {personImageUrl ? (
           <Image
-            source={{
-              uri: `${person.Id}/Images/Primary?tag=${person.PrimaryImageTag}&maxWidth=150`,
-            }}
+            source={{ uri: personImageUrl }}
             style={styles.personImageInner}
             contentFit="cover"
           />
@@ -210,6 +217,16 @@ export default function MovieDetailScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Fixed Back Button */}
+      <Pressable
+        style={[styles.backButton, { top: insets.top + 8 }]}
+        onPress={() => router.back()}
+      >
+        <View style={[styles.backButtonInner, { backgroundColor: colors.overlay.dark }]}>
+          <IconSymbol name="chevron.left" size={24} color="#fff" />
+        </View>
+      </Pressable>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
@@ -233,16 +250,6 @@ export default function MovieDetailScreen() {
             colors={['transparent', colors.background.primary]}
             style={styles.gradient}
           />
-
-          {/* Back Button */}
-          <Pressable
-            style={[styles.backButton, { top: insets.top + 8 }]}
-            onPress={() => router.back()}
-          >
-            <View style={[styles.backButtonInner, { backgroundColor: colors.overlay.dark }]}>
-              <IconSymbol name="chevron.left" size={24} color="#fff" />
-            </View>
-          </Pressable>
         </View>
 
         {/* Content */}
@@ -359,7 +366,7 @@ export default function MovieDetailScreen() {
           {/* Overview */}
           {item.Overview && (
             <ThemedText style={[styles.overview, { color: colors.text.primary }]}>
-              {item.Overview}
+              {formatOverview(item.Overview)}
             </ThemedText>
           )}
 

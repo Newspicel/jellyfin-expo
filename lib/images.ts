@@ -78,3 +78,20 @@ export function getBackdropImageUrl(item: BaseItemDto, maxWidth = 1280): string 
 export function getThumbImageUrl(item: BaseItemDto, maxWidth = 480): string | null {
   return getImageUrl(item, 'Thumb', { maxWidth });
 }
+
+export function getPersonImageUrl(
+  personId: string,
+  imageTag: string | null | undefined,
+  maxWidth = 150
+): string | null {
+  const server = useServerStore.getState().getCurrentServer();
+  if (!server || !personId || !imageTag) return null;
+
+  const params = new URLSearchParams({
+    tag: imageTag,
+    quality: '90',
+    maxWidth: maxWidth.toString(),
+  });
+
+  return `${server.url}/Items/${personId}/Images/Primary?${params.toString()}`;
+}

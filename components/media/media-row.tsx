@@ -39,13 +39,14 @@ export function MediaRow({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {items?.map((item) => (
-            <PosterCard
-              key={item.Id}
-              item={item}
-              width={cardWidth}
-              showProgress={showProgress}
-            />
+          {items?.map((item, index) => (
+            <View key={item.Id} style={index < items.length - 1 ? styles.cardWrapper : undefined}>
+              <PosterCard
+                item={item}
+                width={cardWidth}
+                showProgress={showProgress}
+              />
+            </View>
           ))}
         </ScrollView>
       )}
@@ -63,6 +64,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+  },
+  cardWrapper: {
+    marginRight: 12,
   },
   loadingContainer: {
     height: 180,

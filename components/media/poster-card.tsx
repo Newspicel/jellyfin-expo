@@ -103,7 +103,7 @@ export function PosterCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginRight: 12,
+    // marginRight handled by parent layout
   },
   imageContainer: {
     borderRadius: 8,

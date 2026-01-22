@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,25 +17,43 @@ import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/stores/auth.store';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
 import {
   getItemsOptions,
   getItemOptions,
 } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
+import { useColors, spacing } from '@/theme';
 
-const NUM_COLUMNS = 3;
-const CARD_WIDTH = 110;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const HORIZONTAL_PADDING = spacing.md * 2;
+const MIN_CARD_WIDTH = 100;
+const MAX_CARD_WIDTH = 140;
+const CARD_GAP = spacing.sm;
+
+// Calculate optimal columns and card width
+function calculateGridLayout() {
+  const availableWidth = SCREEN_WIDTH - HORIZONTAL_PADDING;
+  // Start with 3 columns and adjust
+  let numColumns = Math.floor(availableWidth / (MIN_CARD_WIDTH + CARD_GAP));
+  numColumns = Math.max(3, Math.min(6, numColumns)); // Between 3 and 6 columns
+  const cardWidth = Math.min(
+    MAX_CARD_WIDTH,
+    (availableWidth - (numColumns - 1) * CARD_GAP) / numColumns
+  );
+  return { numColumns, cardWidth };
+}
+
+const PAGE_SIZE = 50;
 
 export default function LibraryItemsScreen() {
   const { libraryId } = useLocalSearchParams<{ libraryId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const currentUser = useAuthStore((s) => s.currentUser);
-  const colorScheme = useColorScheme();
-  const tintColor = Colors[colorScheme ?? 'dark'].tint;
+  const colors = useColors();
   const [refreshing, setRefreshing] = useState(false);
+
+  const { numColumns, cardWidth } = useMemo(() => calculateGridLayout(), []);
 
   // Fetch the library info to get the name
   const { data: libraryInfo } = useQuery({
@@ -44,12 +63,17 @@ export default function LibraryItemsScreen() {
     enabled: !!libraryId && !!currentUser?.Id,
   });
 
-  // Fetch items in the library
+  // Manual pagination state
+  const [startIndex, setStartIndex] = useState(0);
+  const [allItems, setAllItems] = useState<BaseItemDto[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+
   const {
-    data: itemsData,
-    isLoading,
+    data: pageData,
+    isLoading: isLoadingPage,
+    isFetching,
     error,
-    refetch,
+    refetch: refetchPage,
   } = useQuery({
     ...getItemsOptions({
       query: {
@@ -60,52 +84,101 @@ export default function LibraryItemsScreen() {
         fields: ['PrimaryImageAspectRatio'],
         enableImageTypes: ['Primary', 'Backdrop', 'Thumb'],
         imageTypeLimit: 1,
-        limit: 100,
+        limit: PAGE_SIZE,
+        startIndex: startIndex,
       },
     }),
     enabled: !!libraryId && !!currentUser?.Id,
   });
 
+  // Update items when new page data arrives
+  const handleNewPageData = useCallback(() => {
+    if (pageData?.Items) {
+      if (startIndex === 0) {
+        setAllItems(pageData.Items);
+      } else {
+        setAllItems((prev) => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map((item) => item.Id));
+          const newItems = pageData.Items!.filter(
+            (item) => !existingIds.has(item.Id)
+          );
+          return [...prev, ...newItems];
+        });
+      }
+      if (pageData.TotalRecordCount !== undefined) {
+        setTotalCount(pageData.TotalRecordCount);
+      }
+    }
+  }, [pageData, startIndex]);
+
+  // Effect to handle new data
+  useMemo(() => {
+    handleNewPageData();
+  }, [handleNewPageData]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetch();
+    setStartIndex(0);
+    setAllItems([]);
+    await refetchPage();
     setRefreshing(false);
-  }, [refetch]);
+  }, [refetchPage]);
+
+  const onEndReached = useCallback(() => {
+    if (isFetching) return;
+    if (totalCount !== null && allItems.length >= totalCount) return;
+
+    const nextIndex = allItems.length;
+    if (nextIndex !== startIndex) {
+      setStartIndex(nextIndex);
+    }
+  }, [isFetching, totalCount, allItems.length, startIndex]);
 
   const renderItem = useCallback(
     ({ item }: { item: BaseItemDto }) => (
-      <View style={styles.cardWrapper}>
-        <PosterCard
-          item={item}
-          width={CARD_WIDTH}
-          showProgress={true}
-        />
+      <View style={[styles.cardWrapper, { width: cardWidth }]}>
+        <PosterCard item={item} width={cardWidth} showProgress={true} />
       </View>
     ),
-    []
+    [cardWidth]
   );
 
   const keyExtractor = useCallback((item: BaseItemDto) => item.Id ?? '', []);
 
   const libraryName = libraryInfo?.Name ?? 'Library';
 
-  const renderHeader = () => (
-    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-      <Pressable style={styles.backButton} onPress={() => router.back()}>
-        <IconSymbol name="chevron.left" size={24} color={tintColor} />
-      </Pressable>
-      <ThemedText type="title" style={styles.headerTitle}>
-        {libraryName}
-      </ThemedText>
-    </View>
-  );
+  const ListFooterComponent = useCallback(() => {
+    if (isFetching && allItems.length > 0) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={colors.text.secondary} />
+        </View>
+      );
+    }
+    return null;
+  }, [isFetching, allItems.length, colors.text.secondary]);
 
-  if (isLoading) {
+  if (isLoadingPage && allItems.length === 0) {
     return (
       <ThemedView style={styles.container}>
-        {renderHeader()}
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <IconSymbol
+              name="chevron.left"
+              size={24}
+              color={colors.interactive.primary}
+            />
+          </Pressable>
+          <ThemedText type="title" style={styles.headerTitle}>
+            {libraryName}
+          </ThemedText>
+        </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.text.secondary} />
         </View>
       </ThemedView>
     );
@@ -114,38 +187,89 @@ export default function LibraryItemsScreen() {
   if (error) {
     return (
       <ThemedView style={styles.container}>
-        {renderHeader()}
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <IconSymbol
+              name="chevron.left"
+              size={24}
+              color={colors.interactive.primary}
+            />
+          </Pressable>
+          <ThemedText type="title" style={styles.headerTitle}>
+            {libraryName}
+          </ThemedText>
+        </View>
         <View style={styles.errorContainer}>
-          <ThemedText>Failed to load items</ThemedText>
+          <ThemedText style={{ color: colors.text.secondary }}>
+            Failed to load items
+          </ThemedText>
         </View>
       </ThemedView>
     );
   }
 
-  const items = itemsData?.Items ?? [];
-
   return (
     <ThemedView style={styles.container}>
-      {renderHeader()}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, backgroundColor: colors.background.primary },
+        ]}
+      >
+        <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <IconSymbol
+            name="chevron.left"
+            size={24}
+            color={colors.interactive.primary}
+          />
+        </Pressable>
+        <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
+          {libraryName}
+        </ThemedText>
+        {totalCount !== null && (
+          <ThemedText style={[styles.itemCount, { color: colors.text.tertiary }]}>
+            {totalCount} items
+          </ThemedText>
+        )}
+      </View>
 
       <FlatList
-        data={items}
+        data={allItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        numColumns={NUM_COLUMNS}
+        numColumns={numColumns}
+        key={`grid-${numColumns}`} // Force re-render when columns change
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: insets.bottom + 16 },
         ]}
-        columnWrapperStyle={styles.row}
+        columnWrapperStyle={[styles.row, { gap: CARD_GAP }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text.secondary}
+          />
         }
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={ListFooterComponent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <ThemedText>No items found</ThemedText>
+            <IconSymbol
+              name="film"
+              size={48}
+              color={colors.text.tertiary}
+            />
+            <ThemedText style={[styles.emptyText, { color: colors.text.secondary }]}>
+              No items in this library
+            </ThemedText>
           </View>
         }
+        showsVerticalScrollIndicator={false}
       />
     </ThemedView>
   );
@@ -158,16 +282,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
   },
   backButton: {
-    padding: 4,
-    marginLeft: -4,
+    padding: spacing.xs,
+    marginLeft: -spacing.xs,
   },
   headerTitle: {
     flex: 1,
+    fontSize: 20,
+  },
+  itemCount: {
+    fontSize: 14,
   },
   loadingContainer: {
     flex: 1,
@@ -184,16 +312,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+    gap: spacing.md,
+  },
+  emptyText: {
+    fontSize: 16,
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
   },
   row: {
-    justifyContent: 'flex-start',
-    gap: 8,
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   cardWrapper: {
-    width: CARD_WIDTH,
+    // Width is set dynamically
+  },
+  footerLoader: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
   },
 });
