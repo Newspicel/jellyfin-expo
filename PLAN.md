@@ -327,10 +327,10 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Seasons list/selector
   - [x] Next up episode highlight
   - [x] Cast list
-- [ ] Create `app/item/season/[id].tsx`:
-  - [ ] Season info
-  - [ ] Episode list with thumbnails
-  - [ ] Episode progress indicators
+- [x] Create `app/item/season/[id].tsx`:
+  - [x] Season info
+  - [x] Episode list with thumbnails
+  - [x] Episode progress indicators
 - [ ] Create `app/item/episode/[id].tsx`:
   - [ ] Episode thumbnail
   - [ ] Title, number, runtime

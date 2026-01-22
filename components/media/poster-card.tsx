@@ -37,6 +37,7 @@ export function PosterCard({
     // Navigate based on item type
     switch (item.Type) {
       case 'Movie':
+      case 'Video':
         router.push(`/item/movie/${item.Id}`);
         break;
       case 'Series':
@@ -48,7 +49,28 @@ export function PosterCard({
       case 'Season':
         router.push(`/item/season/${item.Id}`);
         break;
+      case 'BoxSet':
+      case 'Playlist':
+      case 'CollectionFolder':
+      case 'Folder':
+        // TODO: Implement collection/folder views
+        // For now, navigate to the library view with this as parent
+        router.push(`/(tabs)/library/${item.Id}`);
+        break;
+      case 'MusicAlbum':
+        // TODO: Implement album view
+        router.push(`/item/movie/${item.Id}`);
+        break;
+      case 'MusicArtist':
+        // TODO: Implement artist view
+        router.push(`/item/movie/${item.Id}`);
+        break;
+      case 'Audio':
+        // TODO: Implement audio player
+        break;
       default:
+        // For unknown types, try to show as movie (generic detail view)
+        console.warn(`Unknown item type: ${item.Type}`);
         router.push(`/item/movie/${item.Id}`);
     }
   };
