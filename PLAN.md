@@ -266,7 +266,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Image loading with expo-image
   - [x] Title overlay
   - [x] Progress bar for in-progress items
-  - [ ] TV focus states
+  - [x] TV focus states
 
 ### 2.3 Library Browser
 
@@ -291,10 +291,10 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Title
   - [x] Year/rating
   - [x] Watched indicator
-- [ ] Create `components/media/poster-card.tv.tsx`:
-  - [ ] Focus scaling animation
-  - [ ] Focus border/glow
-  - [ ] Parallax effect on focus
+- [x] Create `components/media/poster-card.tv.tsx`:
+  - [x] Focus scaling animation
+  - [x] Focus border/glow
+  - [x] Parallax effect on focus
 - [x] Create `components/media/media-row.tsx`:
   - [x] Horizontal scroll
   - [x] Row title
