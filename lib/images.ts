@@ -78,7 +78,7 @@ export function getImageUrl(
 
   const params = new URLSearchParams({
     quality: quality.toString(),
-    maxWidth: maxWidth.toString(),
+    maxWidth: Math.round(maxWidth).toString(),
   });
 
   // Add tag if available (for caching)
@@ -87,7 +87,7 @@ export function getImageUrl(
   }
 
   if (maxHeight) {
-    params.set('maxHeight', maxHeight.toString());
+    params.set('maxHeight', Math.round(maxHeight).toString());
   }
 
   // Add API token for authentication
@@ -122,7 +122,7 @@ export function getPersonImageUrl(
   const params = new URLSearchParams({
     tag: imageTag,
     quality: '90',
-    maxWidth: maxWidth.toString(),
+    maxWidth: Math.round(maxWidth).toString(),
   });
 
   // Add API token for authentication
