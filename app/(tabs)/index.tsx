@@ -13,6 +13,7 @@ import {
   getNextUpOptions,
   getLatestMediaOptions,
   getUserViewsOptions,
+  getSuggestionsOptions,
 } from '@/api/generated/@tanstack/react-query.gen';
 import { useState, useCallback } from 'react';
 
@@ -106,6 +107,22 @@ export default function HomeScreen() {
     enabled: !!showsLibrary?.Id,
   });
 
+  // Recommendations - suggested content based on user's watch history
+  const {
+    data: suggestions,
+    isLoading: isLoadingSuggestions,
+    refetch: refetchSuggestions,
+  } = useQuery({
+    ...getSuggestionsOptions({
+      query: {
+        limit: 12,
+        type: ['Movie', 'Series'],
+        mediaType: ['Video'],
+      },
+    }),
+    enabled: !!currentUser?.Id,
+  });
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
@@ -113,9 +130,10 @@ export default function HomeScreen() {
       refetchNextUp(),
       refetchMovies(),
       refetchShows(),
+      refetchSuggestions(),
     ]);
     setRefreshing(false);
-  }, [refetchResume, refetchNextUp, refetchMovies, refetchShows]);
+  }, [refetchResume, refetchNextUp, refetchMovies, refetchShows, refetchSuggestions]);
 
   const userName = currentUser?.Name ?? 'User';
 
@@ -169,6 +187,13 @@ export default function HomeScreen() {
           title="Latest TV Shows"
           items={latestShows}
           isLoading={isLoadingShows}
+          showProgress={false}
+        />
+
+        <MediaRow
+          title="Recommended For You"
+          items={suggestions?.Items}
+          isLoading={isLoadingSuggestions}
           showProgress={false}
         />
       </ScrollView>

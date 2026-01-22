@@ -260,7 +260,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Next Up row (next episodes)
   - [x] Latest Movies row
   - [x] Latest TV Shows row
-  - [ ] Recommendations row
+  - [x] Recommendations row
 - [x] Implement horizontal scrolling rows
 - [x] Implement poster cards with:
   - [x] Image loading with expo-image
