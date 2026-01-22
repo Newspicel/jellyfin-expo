@@ -181,6 +181,7 @@ export default function HomeScreen() {
           items={latestMovies}
           isLoading={isLoadingMovies}
           showProgress={false}
+          seeAllHref={moviesLibrary?.Id ? `/(tabs)/library/${moviesLibrary.Id}` : undefined}
         />
 
         <MediaRow
@@ -188,6 +189,7 @@ export default function HomeScreen() {
           items={latestShows}
           isLoading={isLoadingShows}
           showProgress={false}
+          seeAllHref={showsLibrary?.Id ? `/(tabs)/library/${showsLibrary.Id}` : undefined}
         />
 
         <MediaRow

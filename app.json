@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.jellyfin-expo"
+      "bundleIdentifier": "dev.newspicel.jellyfin-expo"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.jellyfinexpo"
+      "package": "dev.newspicel.jellyfinexpo"
     },
     "web": {
       "bundler": "metro",
