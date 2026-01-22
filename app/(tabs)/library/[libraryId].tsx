@@ -80,7 +80,7 @@ export default function LibraryItemsScreen() {
         parentId: libraryId,
         sortBy: ['SortName'],
         sortOrder: ['Ascending'],
-        recursive: true,
+        recursive: false,
         enableImages: true,
         enableImageTypes: ['Primary', 'Backdrop', 'Thumb'],
         imageTypeLimit: 1,
