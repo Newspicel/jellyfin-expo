@@ -428,6 +428,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [ ] Play/pause button
   - [ ] Seek bar with current/total time
   - [ ] Rewind/fast-forward buttons (10s/30s)
+  - [ ] Intro-Skip/Ads/End button
   - [ ] Volume control
   - [ ] Fullscreen toggle
   - [ ] Settings button (quality, subtitles, audio)

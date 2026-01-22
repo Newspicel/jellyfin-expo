@@ -44,9 +44,12 @@ bunx tsc --noEmit   # Must compile cleanly
 ### 4. Mark Complete
 
 Update `PLAN.md` and change `- [ ]` to `- [x]` for the completed task.
+Add any new tasks to `PLAN.md` if necessary.
+Add any new information to `CLAUDE.md` if necessary.
 
 ### 5. Stop
 
+Commit any changes with a descriptive message.
 Do NOT continue to the next task. Wait for user confirmation.
 
 ## Key Files
