@@ -270,11 +270,11 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.3 Library Browser
 
-- [ ] Create `app/(tabs)/library/_layout.tsx`
-- [ ] Create `app/(tabs)/library/index.tsx`:
-  - [ ] List all user libraries
-  - [ ] Library type icons
-- [ ] Create `app/(tabs)/library/[libraryId].tsx`:
+- [x] Create `app/(tabs)/library/_layout.tsx`
+- [x] Create `app/(tabs)/library/index.tsx`:
+  - [x] List all user libraries
+  - [x] Library type icons
+- [x] Create `app/(tabs)/library/[libraryId].tsx`:
   - [ ] Grid/list view toggle
   - [ ] Sort options (name, date added, release date, etc.)
   - [ ] Filter options (genre, year, etc.)
