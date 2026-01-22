@@ -320,13 +320,13 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.6 TV Series Details
 
-- [ ] Create `app/item/series/[id].tsx`:
-  - [ ] Hero backdrop
-  - [ ] Series title, year range
-  - [ ] Overview
-  - [ ] Seasons list/selector
-  - [ ] Next up episode highlight
-  - [ ] Cast list
+- [x] Create `app/item/series/[id].tsx`:
+  - [x] Hero backdrop
+  - [x] Series title, year range
+  - [x] Overview
+  - [x] Seasons list/selector
+  - [x] Next up episode highlight
+  - [x] Cast list
 - [ ] Create `app/item/season/[id].tsx`:
   - [ ] Season info
   - [ ] Episode list with thumbnails
