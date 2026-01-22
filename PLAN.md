@@ -220,7 +220,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 1.4 Multi-Server Support
 
-- [ ] Server management screen in settings
+- [x] Server management screen in settings
 - [x] Add/remove servers (in store)
 - [x] Switch between servers (in store)
 - [x] Per-server credential storage
