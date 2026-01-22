@@ -331,12 +331,12 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Season info
   - [x] Episode list with thumbnails
   - [x] Episode progress indicators
-- [ ] Create `app/item/episode/[id].tsx`:
-  - [ ] Episode thumbnail
-  - [ ] Title, number, runtime
-  - [ ] Overview
-  - [ ] Play button
-  - [ ] Next/previous episode navigation
+- [x] Create `app/item/episode/[id].tsx`:
+  - [x] Episode thumbnail
+  - [x] Title, number, runtime
+  - [x] Overview
+  - [x] Play button
+  - [x] Next/previous episode navigation
 
 ### 2.7 Search
 
