@@ -1,11 +1,17 @@
 import { Drawer } from 'expo-router/drawer';
-import { Tabs } from 'expo-router';
+import {
+  NativeTabs,
+  Icon,
+  Label,
+} from 'expo-router/unstable-native-tabs';
+import { usePathname } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSearchStore } from '@/stores/search.store';
 
 const tabs = [
   { name: 'index', title: 'Home', icon: 'house.fill' },
@@ -17,8 +23,23 @@ const tabs = [
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const activeTintColor = Colors[colorScheme ?? 'light'].tint;
+  const pathname = usePathname();
+  const previousPathRef = useRef<string | null>(null);
+  const setPreviousTab = useSearchStore((s) => s.setPreviousTab);
 
-  // Use Drawer for TV platforms, Tabs for mobile/tablet
+  // Track previous tab when navigating to search
+  useEffect(() => {
+    const isSearchPath = pathname.includes('/search');
+    const wasSearchPath = previousPathRef.current?.includes('/search');
+
+    if (isSearchPath && !wasSearchPath && previousPathRef.current) {
+      setPreviousTab(previousPathRef.current);
+    }
+
+    previousPathRef.current = pathname;
+  }, [pathname, setPreviousTab]);
+
+  // Use Drawer for TV platforms, NativeTabs for mobile/tablet
   if (Platform.isTV) {
     return (
       <Drawer
@@ -47,24 +68,23 @@ export default function TabLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: activeTintColor,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      {tabs.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{
-            title: tab.title,
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name={tab.icon} color={color} />
-            ),
-          }}
-        />
-      ))}
-    </Tabs>
+    <NativeTabs minimizeBehavior="onScrollDown">
+      <NativeTabs.Trigger name="index">
+        <Icon sf="house.fill" />
+        <Label>Home</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="library">
+        <Icon sf="rectangle.stack.fill" />
+        <Label>Library</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="search" role="search">
+        <Icon sf="magnifyingglass" />
+        <Label>Search</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <Icon sf="gearshape.fill" />
+        <Label>Settings</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
