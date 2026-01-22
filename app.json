@@ -28,7 +28,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "@react-native-tvos/config-tv",
+      ["@react-native-tvos/config-tv", { "tvosDeploymentTarget": "15.1" }],
       "expo-router",
       [
         "expo-splash-screen",
