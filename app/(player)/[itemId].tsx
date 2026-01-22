@@ -14,8 +14,10 @@ import { useEvent, useEventListener } from 'expo';
 import { useQuery } from '@tanstack/react-query';
 
 import { usePlayback } from '@/hooks/use-playback';
+import { useProgressReporting } from '@/hooks/use-progress-reporting';
 import { getItemOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
+import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
 
 // Hide controls after inactivity (ms)
@@ -97,6 +99,21 @@ export default function PlayerScreen() {
     setShowControls(true);
   });
 
+  // Report playback progress to Jellyfin server
+  useProgressReporting({
+    itemId: itemId!,
+    mediaSourceId: playbackInfo?.mediaSource.Id ?? null,
+    playSessionId: playbackInfo?.playSessionId ?? null,
+    playMethod: (playbackInfo?.playMethod ?? 'DirectPlay') as PlayMethod,
+    currentTimeSeconds: currentTime,
+    durationSeconds: duration,
+    isPaused: !isPlaying,
+    isReady: !isBuffering && !!playbackInfo,
+    audioStreamIndex: playbackInfo?.selectedAudioIndex,
+    subtitleStreamIndex: playbackInfo?.selectedSubtitleIndex,
+    enabled: !!playbackInfo,
+  });
+
   // Reset controls hide timer
   const resetHideTimer = useCallback(() => {
     if (hideControlsTimer.current) {
@@ -167,11 +184,12 @@ export default function PlayerScreen() {
   // Debug: Log playback info
   useEffect(() => {
     if (playbackInfo) {
+      const serverProvidedTranscodeUrl = playbackInfo.mediaSource.TranscodingUrl;
       console.log('Playback info:', {
         streamUrl: playbackInfo.streamUrl,
         playMethod: playbackInfo.playMethod,
         container: playbackInfo.mediaSource.Container,
-        transcodingUrl: playbackInfo.mediaSource.TranscodingUrl,
+        urlSource: serverProvidedTranscodeUrl ? 'server' : 'client-built',
       });
     }
   }, [playbackInfo]);

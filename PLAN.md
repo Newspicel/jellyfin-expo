@@ -451,13 +451,13 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.7 Progress Reporting
 
-- [ ] Create `hooks/use-progress-reporting.ts`:
-  - [ ] Report progress every 10 seconds
-  - [ ] Report on pause/resume
-  - [ ] Report on stop
-  - [ ] Report play method (DirectPlay/Transcode)
-- [ ] Implement `POST /Sessions/Playing/Progress`
-- [ ] Implement `POST /Sessions/Playing/Stopped`
+- [x] Create `hooks/use-progress-reporting.ts`:
+  - [x] Report progress every 10 seconds
+  - [x] Report on pause/resume
+  - [x] Report on stop
+  - [x] Report play method (DirectPlay/Transcode)
+- [x] Implement `POST /Sessions/Playing/Progress`
+- [x] Implement `POST /Sessions/Playing/Stopped`
 
 ### 3.8 Resume & Next Episode
 
