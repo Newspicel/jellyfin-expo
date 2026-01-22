@@ -19,7 +19,7 @@ import { getItemOptions, getEpisodesOptions } from '@/api/generated/@tanstack/re
 import type { BaseItemDto } from '@/api/generated';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
-import { SubtitleSelector, AudioSelector, NextEpisodeOverlay } from '@/components/player';
+import { SubtitleSelector, AudioSelector, NextEpisodeOverlay, SeekBar } from '@/components/player';
 
 // Hide controls after inactivity (ms)
 const CONTROLS_HIDE_DELAY = 4000;
@@ -199,6 +199,26 @@ export default function PlayerScreen() {
     resetHideTimer();
   }, [player, resetHideTimer]);
 
+  // Seek to specific time (from seek bar)
+  const seekToTime = useCallback(
+    (time: number) => {
+      player.currentTime = time;
+      resetHideTimer();
+    },
+    [player, resetHideTimer]
+  );
+
+  // Pause hide timer during seeking
+  const handleSeekStart = useCallback(() => {
+    if (hideControlsTimer.current) {
+      clearTimeout(hideControlsTimer.current);
+    }
+  }, []);
+
+  const handleSeekEnd = useCallback(() => {
+    resetHideTimer();
+  }, [resetHideTimer]);
+
   // Track selection handlers
   const handleOpenSubtitles = useCallback(() => {
     setShowSubtitleSelector(true);
@@ -271,18 +291,6 @@ export default function PlayerScreen() {
       });
     }
   }, [playbackInfo]);
-
-  // Format time for display (seconds to hh:mm:ss)
-  const formatTime = (seconds: number): string => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   // Get display title
   const getTitle = (itemData: BaseItemDto | undefined): string => {
@@ -428,18 +436,13 @@ export default function PlayerScreen() {
 
           {/* Bottom bar - Progress and time */}
           <View style={styles.bottomBar}>
-            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBackground}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' },
-                  ]}
-                />
-              </View>
-            </View>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            <SeekBar
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={seekToTime}
+              onSeekStart={handleSeekStart}
+              onSeekEnd={handleSeekEnd}
+            />
           </View>
         </SafeAreaView>
       )}
@@ -593,33 +596,9 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: Platform.OS === 'ios' ? 8 : 16,
     backgroundColor: 'rgba(0,0,0,0.5)',
     paddingTop: 12,
-    gap: 12,
-  },
-  timeText: {
-    color: '#fff',
-    fontSize: 13,
-    fontVariant: ['tabular-nums'],
-    minWidth: 60,
-  },
-  progressContainer: {
-    flex: 1,
-    height: 4,
-  },
-  progressBackground: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 2,
   },
 });

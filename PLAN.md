@@ -425,14 +425,14 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [ ] Buffer configuration for streaming
   - [ ] Hardware acceleration enabled
 - [ ] Create `components/player/player-controls.tsx`:
-  - [ ] Play/pause button
-  - [ ] Seek bar with current/total time
-  - [ ] Rewind/fast-forward buttons (10s/30s)
+  - [x] Play/pause button (implemented inline in player screen)
+  - [x] Seek bar with current/total time (components/player/seek-bar.tsx - draggable)
+  - [x] Rewind/fast-forward buttons (10s/30s) (implemented inline in player screen)
   - [ ] Intro-Skip/Ads/End button
   - [ ] Volume control
   - [ ] Fullscreen toggle
-  - [ ] Settings button (quality, subtitles, audio)
-  - [ ] Auto-hide after inactivity
+  - [x] Settings button (quality, subtitles, audio) (separate selectors)
+  - [x] Auto-hide after inactivity (implemented inline in player screen)
 - [ ] Create `components/player/player-controls.tv.tsx`:
   - [ ] D-pad/remote optimized
   - [ ] Swipe gestures for seek
