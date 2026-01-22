@@ -14,7 +14,8 @@
       "Bash(bun add:*)",
       "Bash(node /Users/julian/Programming/jellyfin-expo/scripts/swap-rn.js:*)",
       "Bash(gh issue view:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(bunx eslint:*)"
     ]
   }
 }

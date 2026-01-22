@@ -131,9 +131,13 @@ export default function LibraryListScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 16 },
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
         ]}
       >
+        <ThemedText type="title" style={styles.title}>
+          Library
+        </ThemedText>
+
         <View style={styles.grid}>
           {libraries.map((library) => (
             <LibraryCard key={library.Id} library={library} />
@@ -156,7 +160,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+  },
+  title: {
+    marginBottom: 16,
   },
   loadingContainer: {
     flex: 1,

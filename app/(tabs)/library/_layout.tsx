@@ -4,29 +4,8 @@ export default function LibraryLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerLargeTitle: true,
-        headerTransparent: true,
-        headerBlurEffect: 'systemChromeMaterial',
-        headerLargeTitleShadowVisible: false,
-        headerShadowVisible: false,
-        headerStyle: {
-          backgroundColor: 'transparent',
-        },
+        headerShown: false,
       }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Library',
-        }}
-      />
-      <Stack.Screen
-        name="[libraryId]"
-        options={{
-          title: '',
-        }}
-      />
-    </Stack>
+    />
   );
 }
