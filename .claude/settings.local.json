@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for tag in \"Auth\" \"LiveTv\" \"Items\" \"Playlists\" \"SyncPlay\" \"Playback\" \"Subtitle\")",
+      "Bash(do:*)",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(bunx tsc:*)"
+    ]
+  }
+}

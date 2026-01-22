@@ -13,5 +13,10 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "config/openapi-ts.config.ts",
+    "openapi-ts.config.ts"
   ]
 }
