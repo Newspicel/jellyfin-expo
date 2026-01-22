@@ -428,7 +428,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Play/pause button (implemented inline in player screen)
   - [x] Seek bar with current/total time (components/player/seek-bar.tsx - draggable)
   - [x] Rewind/fast-forward buttons (10s/30s) (implemented inline in player screen)
-  - [ ] Intro-Skip/Ads/End button
+  - [x] Intro-Skip/Ads/End button
   - [x] Volume control
   - [ ] Fullscreen toggle
   - [x] Settings button (quality, subtitles, audio) (separate selectors)
@@ -465,7 +465,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 - [x] Show resume dialog if position > 5%
 - [x] Auto-play next episode option
 - [x] Next episode overlay at end of playback
-- [ ] Skip intro button (if intro data available)
+- [x] Skip intro button (if intro data available)
 
 ### 3.9 Picture-in-Picture
 

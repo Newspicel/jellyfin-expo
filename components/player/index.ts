@@ -37,3 +37,4 @@ export { NextEpisodeOverlay, type NextEpisodeOverlayProps } from './next-episode
 export { SeekBar } from './seek-bar';
 export { VolumeControl, type VolumeControlProps } from './volume-control';
 export { TVPlayerControls, type TVPlayerControlsProps } from './player-controls.tv';
+export { SkipSegmentButton, type SkipSegmentButtonProps } from './skip-segment-button';

@@ -15,11 +15,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { usePlayback } from '@/hooks/use-playback';
 import { useProgressReporting } from '@/hooks/use-progress-reporting';
+import { useMediaSegments } from '@/hooks/use-media-segments';
 import { getItemOptions, getEpisodesOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
-import { SubtitleSelector, AudioSelector, NextEpisodeOverlay, SeekBar, VolumeControl } from '@/components/player';
+import { SubtitleSelector, AudioSelector, NextEpisodeOverlay, SeekBar, VolumeControl, SkipSegmentButton } from '@/components/player';
 
 // Hide controls after inactivity (ms)
 const CONTROLS_HIDE_DELAY = 4000;
@@ -97,6 +98,17 @@ export default function PlayerScreen() {
     startTimeTicks,
     enabled: !!itemId,
   });
+
+  // Fetch media segments for skip intro/outro functionality
+  const { getActiveSegment } = useMediaSegments({
+    itemId: itemId!,
+    enabled: !!itemId,
+  });
+
+  // Get currently active skippable segment
+  const activeSegment = useMemo(() => {
+    return getActiveSegment(currentTime);
+  }, [getActiveSegment, currentTime]);
 
   // Create video player with expo-video
   const player = useVideoPlayer(playbackInfo?.streamUrl ?? null, (p) => {
@@ -275,6 +287,15 @@ export default function PlayerScreen() {
     [setAudioTrack, resetHideTimer]
   );
 
+  // Skip segment handler (for intro, outro, etc.)
+  const handleSkipSegment = useCallback(
+    (endTimeSeconds: number) => {
+      player.currentTime = endTimeSeconds;
+      resetHideTimer();
+    },
+    [player, resetHideTimer]
+  );
+
   // Next episode handlers
   const handlePlayNextEpisode = useCallback(() => {
     if (nextEpisode?.Id) {
@@ -400,6 +421,13 @@ export default function PlayerScreen() {
           <ActivityIndicator size="large" color="#fff" />
         </View>
       )}
+
+      {/* Skip segment button (intro, outro, etc.) */}
+      <SkipSegmentButton
+        segment={activeSegment}
+        onSkip={handleSkipSegment}
+        controlsVisible={showControls}
+      />
 
       {/* Controls overlay */}
       {showControls && (
