@@ -277,7 +277,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 - [x] Create `app/(tabs)/library/[libraryId].tsx`:
   - [ ] Grid/list view toggle
   - [x] Sort options (name, date added, release date, etc.)
-  - [ ] Filter options (genre, year, etc.)
+  - [x] Filter options (genre, year, etc.)
   - [x] Pagination/infinite scroll
 - [ ] Install and configure FlashList:
   ```bash

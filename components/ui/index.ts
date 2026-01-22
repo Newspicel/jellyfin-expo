@@ -30,3 +30,8 @@ export {
   type SortSelectorProps,
   type SortOption,
 } from './SortSelector';
+export {
+  FilterSelector,
+  type FilterSelectorProps,
+  type FilterState,
+} from './FilterSelector';

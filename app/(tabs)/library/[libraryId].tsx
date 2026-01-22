@@ -15,8 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
-import { IconSymbol, BackButton, SortSelector, DEFAULT_SORT_OPTIONS } from '@/components/ui';
-import type { SortOption } from '@/components/ui';
+import { IconSymbol, BackButton, SortSelector, DEFAULT_SORT_OPTIONS, FilterSelector } from '@/components/ui';
+import type { SortOption, FilterState } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   getItemsOptions,
@@ -53,7 +53,9 @@ export default function LibraryItemsScreen() {
   const colors = useColors();
   const [refreshing, setRefreshing] = useState(false);
   const [sortSelectorVisible, setSortSelectorVisible] = useState(false);
+  const [filterSelectorVisible, setFilterSelectorVisible] = useState(false);
   const [currentSort, setCurrentSort] = useState<SortOption>(DEFAULT_SORT_OPTIONS[0]);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({ genres: [], years: [] });
 
   const { numColumns, cardWidth } = useMemo(() => calculateGridLayout(), []);
 
@@ -107,6 +109,9 @@ export default function LibraryItemsScreen() {
         imageTypeLimit: 1,
         limit: PAGE_SIZE,
         startIndex: startIndex,
+        // Apply filters
+        genres: activeFilters.genres.length > 0 ? activeFilters.genres : undefined,
+        years: activeFilters.years.length > 0 ? activeFilters.years : undefined,
       },
     }),
     enabled: !!libraryId && !!currentUser?.Id,
@@ -152,6 +157,12 @@ export default function LibraryItemsScreen() {
     setAllItems([]);
   }, []);
 
+  const onFilterChange = useCallback((filters: FilterState) => {
+    setActiveFilters(filters);
+    setStartIndex(0);
+    setAllItems([]);
+  }, []);
+
   const onEndReached = useCallback(() => {
     if (isFetching) return;
     if (totalCount !== null && allItems.length >= totalCount) return;
@@ -189,19 +200,44 @@ export default function LibraryItemsScreen() {
   // Calculate header height for content inset
   const headerHeight = insets.top + 52;
 
-  // Render the header with floating glass back button, centered title, and sort button
+  const activeFilterCount = activeFilters.genres.length + activeFilters.years.length;
+
+  // Render the header with floating glass back button, centered title, filter and sort buttons
   const renderHeader = () => (
     <View style={[styles.headerContainer, { paddingTop: insets.top + spacing.sm }]}>
       <BackButton variant="inline" />
       <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
         {libraryName}
       </ThemedText>
-      <Pressable
-        style={[styles.sortButton, { backgroundColor: colors.background.tertiary }]}
-        onPress={() => setSortSelectorVisible(true)}
-      >
-        <IconSymbol name="arrow.up.arrow.down" size={18} color={colors.text.primary} />
-      </Pressable>
+      <View style={styles.headerButtons}>
+        <Pressable
+          style={[
+            styles.headerButton,
+            { backgroundColor: colors.background.tertiary },
+            activeFilterCount > 0 && { backgroundColor: colors.interactive.primary },
+          ]}
+          onPress={() => setFilterSelectorVisible(true)}
+        >
+          <IconSymbol
+            name="line.3.horizontal.decrease"
+            size={18}
+            color={activeFilterCount > 0 ? colors.text.inverse : colors.text.primary}
+          />
+          {activeFilterCount > 0 && (
+            <View style={[styles.filterBadge, { backgroundColor: colors.text.inverse }]}>
+              <ThemedText style={[styles.filterBadgeText, { color: colors.interactive.primary }]}>
+                {activeFilterCount}
+              </ThemedText>
+            </View>
+          )}
+        </Pressable>
+        <Pressable
+          style={[styles.headerButton, { backgroundColor: colors.background.tertiary }]}
+          onPress={() => setSortSelectorVisible(true)}
+        >
+          <IconSymbol name="arrow.up.arrow.down" size={18} color={colors.text.primary} />
+        </Pressable>
+      </View>
     </View>
   );
 
@@ -275,6 +311,14 @@ export default function LibraryItemsScreen() {
         onSelect={onSortChange}
         onClose={() => setSortSelectorVisible(false)}
       />
+      <FilterSelector
+        visible={filterSelectorVisible}
+        parentId={libraryId!}
+        includeItemTypes={includeItemTypes}
+        activeFilters={activeFilters}
+        onApply={onFilterChange}
+        onClose={() => setFilterSelectorVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -300,12 +344,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  sortButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   loadingContainer: {
     flex: 1,
