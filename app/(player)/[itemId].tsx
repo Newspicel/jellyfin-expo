@@ -19,6 +19,7 @@ import { getItemOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { BaseItemDto } from '@/api/generated';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
+import { SubtitleSelector, AudioSelector } from '@/components/player';
 
 // Hide controls after inactivity (ms)
 const CONTROLS_HIDE_DELAY = 4000;
@@ -36,6 +37,8 @@ export default function PlayerScreen() {
   // UI state
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSubtitleSelector, setShowSubtitleSelector] = useState(false);
+  const [showAudioSelector, setShowAudioSelector] = useState(false);
 
   // Time tracking state (updated via events)
   const [currentTime, setCurrentTime] = useState(0);
@@ -58,6 +61,8 @@ export default function PlayerScreen() {
     playbackInfo,
     isLoading: playbackLoading,
     error: playbackError,
+    setAudioTrack,
+    setSubtitleTrack,
   } = usePlayback({
     itemId: itemId!,
     startTimeTicks,
@@ -164,6 +169,37 @@ export default function PlayerScreen() {
     player.seekBy(30);
     resetHideTimer();
   }, [player, resetHideTimer]);
+
+  // Track selection handlers
+  const handleOpenSubtitles = useCallback(() => {
+    setShowSubtitleSelector(true);
+    if (hideControlsTimer.current) {
+      clearTimeout(hideControlsTimer.current);
+    }
+  }, []);
+
+  const handleOpenAudio = useCallback(() => {
+    setShowAudioSelector(true);
+    if (hideControlsTimer.current) {
+      clearTimeout(hideControlsTimer.current);
+    }
+  }, []);
+
+  const handleSubtitleSelect = useCallback(
+    (index: number) => {
+      setSubtitleTrack(index);
+      resetHideTimer();
+    },
+    [setSubtitleTrack, resetHideTimer]
+  );
+
+  const handleAudioSelect = useCallback(
+    (index: number) => {
+      setAudioTrack(index);
+      resetHideTimer();
+    },
+    [setAudioTrack, resetHideTimer]
+  );
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -308,7 +344,27 @@ export default function PlayerScreen() {
                 </Text>
               )}
             </View>
-            <View style={styles.spacer} />
+            <View style={styles.topBarActions}>
+              {/* Audio button */}
+              {playbackInfo.audioTracks.length > 1 && (
+                <Pressable style={styles.topBarButton} onPress={handleOpenAudio}>
+                  <IconSymbol name="speaker.wave.2.fill" size={20} color="#fff" />
+                </Pressable>
+              )}
+              {/* Subtitle button */}
+              <Pressable style={styles.topBarButton} onPress={handleOpenSubtitles}>
+                <IconSymbol
+                  name="captions.bubble.fill"
+                  size={20}
+                  color={
+                    playbackInfo.selectedSubtitleIndex !== null &&
+                    playbackInfo.selectedSubtitleIndex >= 0
+                      ? '#00a2ff'
+                      : '#fff'
+                  }
+                />
+              </Pressable>
+            </View>
           </View>
 
           {/* Center controls - Play/Pause, Seek */}
@@ -345,6 +401,22 @@ export default function PlayerScreen() {
           </View>
         </SafeAreaView>
       )}
+
+      {/* Track selectors */}
+      <SubtitleSelector
+        visible={showSubtitleSelector}
+        tracks={playbackInfo.subtitleTracks}
+        selectedIndex={playbackInfo.selectedSubtitleIndex}
+        onSelect={handleSubtitleSelect}
+        onClose={() => setShowSubtitleSelector(false)}
+      />
+      <AudioSelector
+        visible={showAudioSelector}
+        tracks={playbackInfo.audioTracks}
+        selectedIndex={playbackInfo.selectedAudioIndex}
+        onSelect={handleAudioSelect}
+        onClose={() => setShowAudioSelector(false)}
+      />
     </View>
   );
 }
@@ -436,8 +508,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  spacer: {
-    width: 44,
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topBarButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   centerControls: {
     flexDirection: 'row',

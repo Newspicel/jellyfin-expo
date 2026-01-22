@@ -441,13 +441,13 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.6 Subtitle & Audio Selection
 
-- [ ] Create `components/player/subtitle-selector.tsx`:
-  - [ ] List available subtitle tracks
-  - [ ] Off option
-  - [ ] External subtitle support
-- [ ] Create `components/player/audio-selector.tsx`:
-  - [ ] List available audio tracks
-  - [ ] Language/codec info display
+- [x] Create `components/player/subtitle-selector.tsx`:
+  - [x] List available subtitle tracks
+  - [x] Off option
+  - [x] External subtitle support
+- [x] Create `components/player/audio-selector.tsx`:
+  - [x] List available audio tracks
+  - [x] Language/codec info display
 
 ### 3.7 Progress Reporting
 
