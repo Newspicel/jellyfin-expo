@@ -362,7 +362,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.1 Video Player Setup
 
-- [ ] Install react-native-video:
+- [x] Install react-native-video:
   ```bash
   npm install react-native-video
   ```
@@ -370,7 +370,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   ```bash
   npm run prebuild:tv
   ```
-- [ ] Configure iOS permissions in `app.json`:
+- [x] Configure iOS permissions in `app.json`:
   ```json
   "ios": {
     "infoPlist": {
