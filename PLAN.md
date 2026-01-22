@@ -213,8 +213,8 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 - [x] Update `app/_layout.tsx`:
   - [x] Check auth state on mount
-  - [ ] Redirect to `/(auth)` if not authenticated
-  - [ ] Redirect to `/(tabs)` if authenticated
+  - [x] Redirect to `/(auth)` if not authenticated
+  - [x] Redirect to `/(tabs)` if authenticated
 - [x] Implement auth state hydration from secure storage
 - [x] Add logout functionality (in auth store)
 
@@ -240,12 +240,12 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.1 Main Tab Navigation
 
-- [ ] Update `app/(tabs)/_layout.tsx`:
-  - [ ] Home tab
-  - [ ] Library tab
-  - [ ] Search tab
-  - [ ] Settings tab
-- [ ] Create TV layout variant with sidebar navigation:
+- [x] Update `app/(tabs)/_layout.tsx`:
+  - [x] Home tab
+  - [x] Library tab
+  - [x] Search tab
+  - [x] Settings tab
+- [x] Create TV layout variant with sidebar navigation:
   ```typescript
   if (Platform.isTV) {
     return <Drawer>...</Drawer>;

@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { queryClient } from '@/lib/query-client';
 import { initializeApiClient, configureApiClient } from '@/api/client';
 import { useAuthStore } from '@/stores/auth.store';
+import { useServerStore } from '@/stores/server.store';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -18,6 +19,8 @@ function AppContent() {
   const colorScheme = useColorScheme();
   const isLoading = useAuthStore((state) => state.isLoading);
   const setIsLoading = useAuthStore((state) => state.setIsLoading);
+  const getCredentials = useAuthStore((state) => state.getCredentials);
+  const currentServerId = useServerStore((state) => state.currentServerId);
 
   useEffect(() => {
     async function init() {
@@ -32,11 +35,14 @@ function AppContent() {
     return null; // Or a loading screen
   }
 
+  // Check if user is authenticated for the current server
+  const hasValidAuth = currentServerId !== null && getCredentials(currentServerId) !== null;
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} redirect={!hasValidAuth} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} redirect={hasValidAuth} />
         <Stack.Screen
           name="(player)"
           options={{

@@ -3,11 +3,11 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
-export default function HomeScreen() {
+export default function LibraryScreen() {
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Home</ThemedText>
-      <ThemedText>Continue watching, next up, and recommendations.</ThemedText>
+      <ThemedText type="title">Library</ThemedText>
+      <ThemedText>Browse your media libraries here.</ThemedText>
     </ThemedView>
   );
 }
