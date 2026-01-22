@@ -408,15 +408,15 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.4 Player Screen
 
-- [ ] Create `app/(player)/_layout.tsx`:
-  - [ ] Fullscreen modal presentation
-  - [ ] Hide status bar
+- [x] Create `app/(player)/_layout.tsx`:
+  - [x] Fullscreen modal presentation
+  - [x] Hide status bar
   - [ ] Landscape orientation lock (optional)
-- [ ] Create `app/(player)/[itemId].tsx`:
-  - [ ] Fetch playback info on mount
-  - [ ] Display loading state
-  - [ ] Initialize video player
-  - [ ] Handle errors gracefully
+- [x] Create `app/(player)/[itemId].tsx`:
+  - [x] Fetch playback info on mount
+  - [x] Display loading state
+  - [x] Initialize video player
+  - [x] Handle errors gracefully
 
 ### 3.5 Player Components
 

@@ -1,20 +1,328 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Video, {
+  type VideoRef,
+  type OnLoadData,
+  type OnProgressData,
+  type OnBufferData,
+} from 'react-native-video';
+import { useQuery } from '@tanstack/react-query';
+
+import { usePlayback } from '@/hooks/use-playback';
+import { getItemOptions } from '@/api/generated/@tanstack/react-query.gen';
+import type { BaseItemDto } from '@/api/generated';
+import { IconSymbol } from '@/components/ui';
+
+// Hide controls after inactivity (ms)
+const CONTROLS_HIDE_DELAY = 4000;
 
 export default function PlayerScreen() {
-  const { itemId } = useLocalSearchParams<{ itemId: string }>();
+  const { itemId, startTimeTicks: startTimeParam } = useLocalSearchParams<{
+    itemId: string;
+    startTimeTicks?: string;
+  }>();
   const router = useRouter();
+  const videoRef = useRef<VideoRef>(null);
+
+  // Parse start time from params (for resume functionality)
+  const startTimeTicks = startTimeParam ? parseInt(startTimeParam, 10) : 0;
+
+  // Video state
+  const [isPaused, setIsPaused] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [showControls, setShowControls] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Controls auto-hide timer
+  const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch item details for title display
+  const { data: item } = useQuery({
+    ...getItemOptions({
+      path: { itemId: itemId! },
+    }),
+    enabled: !!itemId,
+  });
+
+  // Fetch playback info using the hook
+  const {
+    playbackInfo,
+    isLoading: playbackLoading,
+    error: playbackError,
+  } = usePlayback({
+    itemId: itemId!,
+    startTimeTicks,
+    enabled: !!itemId,
+  });
+
+  // Reset controls hide timer
+  const resetHideTimer = useCallback(() => {
+    if (hideControlsTimer.current) {
+      clearTimeout(hideControlsTimer.current);
+    }
+    setShowControls(true);
+    hideControlsTimer.current = setTimeout(() => {
+      if (!isPaused) {
+        setShowControls(false);
+      }
+    }, CONTROLS_HIDE_DELAY);
+  }, [isPaused]);
+
+  // Handle screen tap to toggle controls
+  const handleScreenTap = useCallback(() => {
+    if (showControls) {
+      setShowControls(false);
+      if (hideControlsTimer.current) {
+        clearTimeout(hideControlsTimer.current);
+      }
+    } else {
+      resetHideTimer();
+    }
+  }, [showControls, resetHideTimer]);
+
+  // Play/pause toggle
+  const togglePlayPause = useCallback(() => {
+    setIsPaused((prev) => !prev);
+    resetHideTimer();
+  }, [resetHideTimer]);
+
+  // Close player
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  // Seek handlers
+  const seekBackward = useCallback(() => {
+    if (videoRef.current) {
+      const newTime = Math.max(0, currentTime - 10);
+      videoRef.current.seek(newTime);
+      resetHideTimer();
+    }
+  }, [currentTime, resetHideTimer]);
+
+  const seekForward = useCallback(() => {
+    if (videoRef.current) {
+      const newTime = Math.min(duration, currentTime + 30);
+      videoRef.current.seek(newTime);
+      resetHideTimer();
+    }
+  }, [currentTime, duration, resetHideTimer]);
+
+  // Video event handlers
+  const handleLoad = useCallback((data: OnLoadData) => {
+    setDuration(data.duration);
+    setIsBuffering(false);
+  }, []);
+
+  const handleProgress = useCallback((data: OnProgressData) => {
+    setCurrentTime(data.currentTime);
+  }, []);
+
+  const handleBuffer = useCallback((data: OnBufferData) => {
+    setIsBuffering(data.isBuffering);
+  }, []);
+
+  const handleError = useCallback((err: { error: { errorString?: string } }) => {
+    console.error('Video playback error:', err);
+    setError(err.error?.errorString || 'Playback error occurred');
+    setIsBuffering(false);
+  }, []);
+
+  const handleEnd = useCallback(() => {
+    // Video ended - could auto-play next episode here
+    setIsPaused(true);
+    setShowControls(true);
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hideControlsTimer.current) {
+        clearTimeout(hideControlsTimer.current);
+      }
+    };
+  }, []);
+
+  // Start auto-hide timer when playing
+  useEffect(() => {
+    if (!isPaused && showControls) {
+      resetHideTimer();
+    }
+  }, [isPaused, showControls, resetHideTimer]);
+
+  // Format time for display (seconds to hh:mm:ss)
+  const formatTime = (seconds: number): string => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get display title
+  const getTitle = (itemData: BaseItemDto | undefined): string => {
+    if (!itemData) return '';
+    if (itemData.Type === 'Episode' && itemData.SeriesName) {
+      return `${itemData.SeriesName} - S${itemData.ParentIndexNumber}E${itemData.IndexNumber}`;
+    }
+    return itemData.Name || '';
+  };
+
+  // Loading state
+  if (playbackLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Loading playback info...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Error state
+  if (playbackError || error) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.errorContainer}>
+          <Pressable style={styles.closeButton} onPress={handleClose}>
+            <IconSymbol name="xmark" size={24} color="#fff" />
+          </Pressable>
+          <View style={styles.centerContent}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={48} color="#ff6b6b" />
+            <Text style={styles.errorTitle}>Playback Error</Text>
+            <Text style={styles.errorText}>
+              {error || playbackError?.message || 'Unable to play this video'}
+            </Text>
+            <Pressable style={styles.retryButton} onPress={handleClose}>
+              <Text style={styles.retryText}>Go Back</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // No playback info available
+  if (!playbackInfo) {
+    return (
+      <View style={styles.container}>
+        <SafeAreaView style={styles.errorContainer}>
+          <Pressable style={styles.closeButton} onPress={handleClose}>
+            <IconSymbol name="xmark" size={24} color="#fff" />
+          </Pressable>
+          <View style={styles.centerContent}>
+            <IconSymbol name="film" size={48} color="#666" />
+            <Text style={styles.errorTitle}>Unable to Play</Text>
+            <Text style={styles.errorText}>
+              No compatible playback source found for this video.
+            </Text>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.controls}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Text style={styles.closeText}>Close</Text>
-        </TouchableOpacity>
-        <Text style={styles.placeholder}>Video Player</Text>
-        <Text style={styles.itemId}>Item: {itemId}</Text>
-      </SafeAreaView>
+      {/* Video Player */}
+      <Pressable style={styles.videoContainer} onPress={handleScreenTap}>
+        <Video
+          ref={videoRef}
+          source={{ uri: playbackInfo.streamUrl }}
+          style={styles.video}
+          resizeMode="contain"
+          paused={isPaused}
+          onLoad={handleLoad}
+          onProgress={handleProgress}
+          onBuffer={handleBuffer}
+          onError={handleError}
+          onEnd={handleEnd}
+          progressUpdateInterval={1000}
+          playInBackground={false}
+          playWhenInactive={false}
+          ignoreSilentSwitch="ignore"
+          allowsExternalPlayback={true}
+          preventsDisplaySleepDuringVideoPlayback={true}
+        />
+      </Pressable>
+
+      {/* Buffering indicator */}
+      {isBuffering && (
+        <View style={styles.bufferingContainer}>
+          <ActivityIndicator size="large" color="#fff" />
+        </View>
+      )}
+
+      {/* Controls overlay */}
+      {showControls && (
+        <SafeAreaView style={styles.controlsOverlay} pointerEvents="box-none">
+          {/* Top bar - Close button and title */}
+          <View style={styles.topBar}>
+            <Pressable style={styles.closeButton} onPress={handleClose}>
+              <IconSymbol name="xmark" size={24} color="#fff" />
+            </Pressable>
+            <View style={styles.titleContainer}>
+              <Text style={styles.title} numberOfLines={1}>
+                {getTitle(item)}
+              </Text>
+              {playbackInfo.playMethod !== 'DirectPlay' && (
+                <Text style={styles.transcodeIndicator}>
+                  {playbackInfo.playMethod === 'Transcode' ? 'Transcoding' : 'Direct Stream'}
+                </Text>
+              )}
+            </View>
+            <View style={styles.spacer} />
+          </View>
+
+          {/* Center controls - Play/Pause, Seek */}
+          <View style={styles.centerControls}>
+            <Pressable style={styles.seekButton} onPress={seekBackward}>
+              <IconSymbol name="gobackward.10" size={36} color="#fff" />
+            </Pressable>
+            <Pressable style={styles.playPauseButton} onPress={togglePlayPause}>
+              <IconSymbol
+                name={isPaused ? 'play.fill' : 'pause.fill'}
+                size={48}
+                color="#fff"
+              />
+            </Pressable>
+            <Pressable style={styles.seekButton} onPress={seekForward}>
+              <IconSymbol name="goforward.30" size={36} color="#fff" />
+            </Pressable>
+          </View>
+
+          {/* Bottom bar - Progress and time */}
+          <View style={styles.bottomBar}>
+            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBackground}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' },
+                  ]}
+                />
+              </View>
+            </View>
+            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          </View>
+        </SafeAreaView>
+      )}
     </View>
   );
 }
@@ -24,29 +332,139 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  controls: {
+  videoContainer: {
+    flex: 1,
+  },
+  video: {
+    flex: 1,
+  },
+  centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    color: '#fff',
+    marginTop: 16,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+  },
+  errorTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  errorText: {
+    color: '#999',
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  bufferingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  controlsOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 8 : 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingBottom: 12,
   },
   closeButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    padding: 12,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  closeText: {
+  titleContainer: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  title: {
     color: '#fff',
     fontSize: 17,
+    fontWeight: '600',
   },
-  placeholder: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
+  transcodeIndicator: {
+    color: '#ff9500',
+    fontSize: 12,
+    marginTop: 2,
   },
-  itemId: {
+  spacer: {
+    width: 44,
+  },
+  centerControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 48,
+  },
+  seekButton: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playPauseButton: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 40,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingTop: 12,
+    gap: 12,
+  },
+  timeText: {
     color: '#fff',
-    opacity: 0.6,
-    marginTop: 8,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+    minWidth: 60,
+  },
+  progressContainer: {
+    flex: 1,
+    height: 4,
+  },
+  progressBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 2,
   },
 });

@@ -170,9 +170,8 @@ export default function EpisodeDetailScreen() {
 
   const handlePlay = useCallback(() => {
     if (!id) return;
-    // TODO: Navigate to player when implemented
-    // router.push(`/(player)/${id}`);
-  }, [id]);
+    router.push(`/(player)/${id}`);
+  }, [id, router]);
 
   const handleToggleWatched = useCallback(() => {
     if (!id) return;

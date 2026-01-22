@@ -8,7 +8,7 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -81,6 +81,7 @@ function PersonCard({ person }: { person: BaseItemPerson }) {
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -146,9 +147,8 @@ export default function MovieDetailScreen() {
 
   const handlePlay = useCallback(() => {
     if (!id) return;
-    // TODO: Navigate to player when implemented
-    // router.push(`/(player)/${id}`);
-  }, [id]);
+    router.push(`/(player)/${id}`);
+  }, [id, router]);
 
   const handleToggleWatched = useCallback(() => {
     if (!id) return;
