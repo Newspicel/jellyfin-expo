@@ -342,7 +342,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 - [x] Create `app/(tabs)/search.tsx`:
   - [x] Search input with debounce
-  - [ ] Recent searches
+  - [x] Recent searches
   - [x] Search results grid
   - [x] Filter by type (movies, series, episodes, people)
 - [ ] Voice search on TV platforms

@@ -6,6 +6,7 @@ import {
   View,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import type { SearchBarCommands } from 'react-native-screens';
 import { useQuery } from '@tanstack/react-query';
@@ -93,6 +94,10 @@ export default function SearchScreen() {
   const setQuery = useSearchStore((s) => s.setQuery);
   const activeFilter = useSearchStore((s) => s.activeFilter ?? 'all') as SearchFilter;
   const setActiveFilter = useSearchStore((s) => s.setActiveFilter);
+  const recentSearches = useSearchStore((s) => s.recentSearches);
+  const addRecentSearch = useSearchStore((s) => s.addRecentSearch);
+  const removeRecentSearch = useSearchStore((s) => s.removeRecentSearch);
+  const clearRecentSearches = useSearchStore((s) => s.clearRecentSearches);
 
   const currentUser = useAuthStore((s) => s.currentUser);
   const serverUrl = useServerStore((s) => s.getCurrentServer()?.url);
@@ -115,6 +120,9 @@ export default function SearchScreen() {
           onSearchButtonPress: () => {
             Keyboard.dismiss();
             searchBarRef.current?.blur();
+            if (query.trim().length >= 2) {
+              addRecentSearch(query);
+            }
           },
         },
       });
@@ -124,7 +132,7 @@ export default function SearchScreen() {
         searchBarRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
-    }, [navigation, setQuery])
+    }, [navigation, setQuery, query, addRecentSearch])
   );
 
   // Build search options based on filter
@@ -164,6 +172,11 @@ export default function SearchScreen() {
     searchBarRef.current?.blur();
     if (!item.Id) return;
 
+    // Save search to recent when user taps a result
+    if (query.trim().length >= 2) {
+      addRecentSearch(query);
+    }
+
     switch (item.Type) {
       case 'Movie':
         router.push(`/item/movie/${item.Id}`);
@@ -183,11 +196,32 @@ export default function SearchScreen() {
       default:
         router.push(`/item/movie/${item.Id}`);
     }
-  }, [router]);
+  }, [router, query, addRecentSearch]);
 
   const handleFilterChange = useCallback((filter: SearchFilter) => {
     setActiveFilter(filter);
   }, [setActiveFilter]);
+
+  const handleRecentSearchPress = useCallback((searchTerm: string) => {
+    setQuery(searchTerm);
+    searchBarRef.current?.setText(searchTerm);
+    searchBarRef.current?.focus();
+  }, [setQuery]);
+
+  const handleRemoveRecentSearch = useCallback((searchTerm: string) => {
+    removeRecentSearch(searchTerm);
+  }, [removeRecentSearch]);
+
+  const handleClearRecentSearches = useCallback(() => {
+    Alert.alert(
+      'Clear Recent Searches',
+      'Are you sure you want to clear all recent searches?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: clearRecentSearches },
+      ]
+    );
+  }, [clearRecentSearches]);
 
   const renderResultItem = (item: SearchHint) => {
     const imageUrl = serverUrl ? getImageUrl(item, serverUrl, 150) : null;
@@ -302,7 +336,39 @@ export default function SearchScreen() {
           </GlassContainer>
         </View>
 
-        {showInitialState && (
+        {showInitialState && recentSearches.length > 0 && (
+          <View style={styles.recentSearchesContainer}>
+            <View style={styles.recentSearchesHeader}>
+              <ThemedText style={styles.recentSearchesTitle}>Recent Searches</ThemedText>
+              <Pressable onPress={handleClearRecentSearches} hitSlop={8}>
+                <ThemedText style={[styles.clearButton, { color: colors.interactive.primary }]}>
+                  Clear
+                </ThemedText>
+              </Pressable>
+            </View>
+            {recentSearches.map((searchTerm) => (
+              <Pressable
+                key={searchTerm}
+                style={styles.recentSearchItem}
+                onPress={() => handleRecentSearchPress(searchTerm)}
+              >
+                <IconSymbol name="clock.arrow.circlepath" size={18} color={colors.text.tertiary} />
+                <ThemedText style={styles.recentSearchText} numberOfLines={1}>
+                  {searchTerm}
+                </ThemedText>
+                <Pressable
+                  onPress={() => handleRemoveRecentSearch(searchTerm)}
+                  hitSlop={12}
+                  style={styles.removeButton}
+                >
+                  <IconSymbol name="xmark" size={14} color={colors.text.tertiary} />
+                </Pressable>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {showInitialState && recentSearches.length === 0 && (
           <View style={styles.emptyState}>
             <IconSymbol name="magnifyingglass" size={48} color={colors.text.tertiary} />
             <ThemedText style={[styles.emptyStateText, { color: colors.text.secondary }]}>
@@ -440,5 +506,35 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  recentSearchesContainer: {
+    marginTop: spacing.sm,
+  },
+  recentSearchesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  recentSearchesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  clearButton: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  recentSearchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  recentSearchText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  removeButton: {
+    padding: spacing.xs,
   },
 });
