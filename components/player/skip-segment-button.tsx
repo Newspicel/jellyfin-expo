@@ -13,7 +13,6 @@ import {
   StyleSheet,
   Pressable,
   Animated,
-  Platform,
 } from 'react-native';
 
 import { IconSymbol } from '@/components/ui';
@@ -30,25 +29,36 @@ export interface SkipSegmentButtonProps {
   segment: MediaSegment | null;
   /** Called when the user presses the skip button */
   onSkip: (endTimeSeconds: number) => void;
-  /** Whether the controls are currently visible (button hides with controls) */
+  /** Whether the controls are currently visible (affects position) */
   controlsVisible?: boolean;
+  /** Bottom offset when controls are hidden */
+  bottomOffsetHidden?: number;
+  /** Bottom offset when controls are visible */
+  bottomOffsetVisible?: number;
 }
 
 // =============================================================================
 // COMPONENT
 // =============================================================================
 
+// Default bottom offsets
+const DEFAULT_BOTTOM_HIDDEN = 40;
+const DEFAULT_BOTTOM_VISIBLE = 100;
+
 export function SkipSegmentButton({
   segment,
   onSkip,
   controlsVisible = true,
+  bottomOffsetHidden = DEFAULT_BOTTOM_HIDDEN,
+  bottomOffsetVisible = DEFAULT_BOTTOM_VISIBLE,
 }: SkipSegmentButtonProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+  const bottomAnim = useRef(new Animated.Value(bottomOffsetHidden)).current;
 
   // Animate in when segment becomes active
   useEffect(() => {
-    if (segment && controlsVisible) {
+    if (segment) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -75,7 +85,16 @@ export function SkipSegmentButton({
         }),
       ]).start();
     }
-  }, [segment, controlsVisible, fadeAnim, slideAnim]);
+  }, [segment, fadeAnim, slideAnim]);
+
+  // Animate bottom position based on controls visibility
+  useEffect(() => {
+    Animated.timing(bottomAnim, {
+      toValue: controlsVisible ? bottomOffsetVisible : bottomOffsetHidden,
+      duration: 200,
+      useNativeDriver: false, // bottom position requires layout animation
+    }).start();
+  }, [controlsVisible, bottomOffsetHidden, bottomOffsetVisible, bottomAnim]);
 
   const handleSkip = useCallback(() => {
     if (segment) {
@@ -97,9 +116,10 @@ export function SkipSegmentButton({
         {
           opacity: fadeAnim,
           transform: [{ translateX: slideAnim }],
+          bottom: bottomAnim,
         },
       ]}
-      pointerEvents={segment && controlsVisible ? 'auto' : 'none'}
+      pointerEvents={segment ? 'auto' : 'none'}
     >
       <Pressable
         style={({ pressed }) => [
@@ -127,11 +147,7 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: Platform.select({
-      ios: 100,
-      android: 100,
-      default: 80,
-    }),
+    // bottom is set dynamically via animation
   },
   button: {
     flexDirection: 'row',

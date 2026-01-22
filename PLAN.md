@@ -411,7 +411,7 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 - [x] Create `app/(player)/_layout.tsx`:
   - [x] Fullscreen modal presentation
   - [x] Hide status bar
-  - [ ] Landscape orientation lock (optional)
+  - [x] Landscape orientation lock (via expo-screen-orientation hook)
 - [x] Create `app/(player)/[itemId].tsx`:
   - [x] Fetch playback info on mount
   - [x] Display loading state
@@ -420,18 +420,20 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 3.5 Player Components
 
-- [x] Mobile player uses native controls (expo-video with nativeControls={true}):
-  - [x] Platform-native UI (AVPlayerViewController on iOS, system player on Android)
-  - [x] Built-in play/pause, seek, volume (hardware buttons)
-  - [x] Fullscreen and rotation handled by system
-  - [x] PiP support enabled (allowsPictureInPicture)
-  - [x] Skip intro/outro button overlaid on native player
-- [x] Create `components/player/player-controls.tsx` (available for custom use):
+- [x] Mobile player uses custom controls (expo-video with nativeControls={false}):
+  - [x] Landscape orientation lock on mount
+  - [x] Tap to toggle controls, double-tap edges to seek (10s/30s)
+  - [x] Hardware volume buttons (no on-screen volume slider)
+  - [x] Manual PiP trigger button
+  - [x] Skip intro/outro button with dynamic positioning
+  - [x] Subtitle and audio track selectors
+  - [x] Gradient overlays for better control visibility
+  - [x] Auto-hide controls after 4 seconds of inactivity
+- [x] Create `components/player/player-controls.tsx`:
   - [x] Play/pause button
   - [x] Seek bar with current/total time (uses SeekBar component)
   - [x] Rewind/fast-forward buttons (10s/30s)
-  - [x] Volume control (uses VolumeControl component)
-  - [x] Fullscreen toggle
+  - [x] PiP button (replaces volume slider on mobile)
   - [x] Settings button (audio/subtitle selectors)
   - [x] Auto-hide after inactivity
 - [x] Create `components/player/player-controls.tv.tsx`:
@@ -439,6 +441,20 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Swipe gestures for seek
   - [x] Play/pause on center button
   - [x] Back button handling
+- [x] Create `components/player/player-gesture-handler.tsx`:
+  - [x] Tap anywhere to toggle controls
+  - [x] Double-tap left third for -10s seek
+  - [x] Double-tap right third for +30s seek
+  - [x] Ripple animation feedback
+- [x] Create `components/player/buffering-indicator.tsx`:
+  - [x] Centered spinner overlay
+  - [x] Fade in/out animation
+- [x] Create `hooks/use-screen-orientation.ts`:
+  - [x] Lock to landscape on mount
+  - [x] Unlock on unmount
+- [x] Create `hooks/use-controls-visibility.ts`:
+  - [x] Auto-hide after 4 seconds when playing
+  - [x] Pause/reset timer methods for interactions
 
 ### 3.6 Subtitle & Audio Selection
 

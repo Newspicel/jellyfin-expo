@@ -1,30 +1,31 @@
 /**
  * Player Components
  *
- * Components for video playback UI including track selection.
+ * Components for video playback UI including:
+ * - Track selection (subtitle, audio)
+ * - Player controls (mobile and TV)
+ * - Gesture handling (tap, double-tap)
+ * - Skip segments (intro, outro)
+ * - Next episode overlay
+ * - Buffering indicator
  *
  * @example
  * ```tsx
- * import { SubtitleSelector, AudioSelector } from '@/components/player';
+ * import {
+ *   PlayerControls,
+ *   PlayerGestureHandler,
+ *   BufferingIndicator,
+ *   SkipSegmentButton,
+ * } from '@/components/player';
  *
  * function PlayerScreen() {
  *   return (
- *     <>
- *       <SubtitleSelector
- *         visible={showSubtitles}
- *         tracks={subtitleTracks}
- *         selectedIndex={selectedSubtitleIndex}
- *         onSelect={setSubtitleTrack}
- *         onClose={() => setShowSubtitles(false)}
- *       />
- *       <AudioSelector
- *         visible={showAudio}
- *         tracks={audioTracks}
- *         selectedIndex={selectedAudioIndex}
- *         onSelect={setAudioTrack}
- *         onClose={() => setShowAudio(false)}
- *       />
- *     </>
+ *     <PlayerGestureHandler onTap={toggle} onDoubleTapLeft={seekBack} onDoubleTapRight={seekForward}>
+ *       <VideoView player={player} />
+ *       <PlayerControls visible={controlsVisible} {...props} />
+ *       <BufferingIndicator visible={isBuffering} />
+ *       <SkipSegmentButton segment={activeSegment} onSkip={handleSkip} />
+ *     </PlayerGestureHandler>
  *   );
  * }
  * ```
@@ -39,3 +40,5 @@ export { VolumeControl, type VolumeControlProps } from './volume-control';
 export { TVPlayerControls, type TVPlayerControlsProps } from './player-controls.tv';
 export { PlayerControls, type PlayerControlsProps } from './player-controls';
 export { SkipSegmentButton, type SkipSegmentButtonProps } from './skip-segment-button';
+export { PlayerGestureHandler, type PlayerGestureHandlerProps } from './player-gesture-handler';
+export { BufferingIndicator, type BufferingIndicatorProps } from './buffering-indicator';

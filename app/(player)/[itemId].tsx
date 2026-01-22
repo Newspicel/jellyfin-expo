@@ -1,24 +1,42 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { useVideoPlayer, VideoView, isPictureInPictureSupported } from 'expo-video';
+import type { VideoView as VideoViewType } from 'expo-video';
 import { useEvent, useEventListener } from 'expo';
 import { useQuery } from '@tanstack/react-query';
 
 import { usePlayback } from '@/hooks/use-playback';
 import { useProgressReporting } from '@/hooks/use-progress-reporting';
 import { useMediaSegments } from '@/hooks/use-media-segments';
+import { useScreenOrientation } from '@/hooks/use-screen-orientation';
+import { useControlsVisibility } from '@/hooks/use-controls-visibility';
 import { getItemOptions, getEpisodesOptions } from '@/api/generated/@tanstack/react-query.gen';
 import type { PlayMethod } from '@/api/generated/types.gen';
 import { IconSymbol } from '@/components/ui';
-import { SkipSegmentButton, NextEpisodeOverlay } from '@/components/player';
+import {
+  SkipSegmentButton,
+  NextEpisodeOverlay,
+  PlayerControls,
+  TVPlayerControls,
+  PlayerGestureHandler,
+  BufferingIndicator,
+  SubtitleSelector,
+  AudioSelector,
+} from '@/components/player';
+import { isTV } from '@/theme';
+
+// Seek amounts in seconds
+const SEEK_BACKWARD_AMOUNT = 10;
+const SEEK_FORWARD_AMOUNT = 30;
 
 export default function PlayerScreen() {
   const { itemId, startTimeTicks: startTimeParam } = useLocalSearchParams<{
@@ -30,9 +48,22 @@ export default function PlayerScreen() {
   // Parse start time from params (for resume functionality)
   const startTimeTicks = startTimeParam ? parseInt(startTimeParam, 10) : 0;
 
+  // Lock screen to landscape on mobile
+  useScreenOrientation();
+
+  // Video view ref for PiP
+  const videoViewRef = useRef<VideoViewType>(null);
+
+  // Check PiP support
+  const isPiPSupported = useMemo(() => {
+    return Platform.OS !== 'web' && isPictureInPictureSupported();
+  }, []);
+
   // UI state
   const [error, setError] = useState<string | null>(null);
   const [showNextEpisode, setShowNextEpisode] = useState(false);
+  const [showSubtitleSelector, setShowSubtitleSelector] = useState(false);
+  const [showAudioSelector, setShowAudioSelector] = useState(false);
 
   // Time tracking state (updated via events)
   const [currentTime, setCurrentTime] = useState(0);
@@ -76,6 +107,8 @@ export default function PlayerScreen() {
     playbackInfo,
     isLoading: playbackLoading,
     error: playbackError,
+    setAudioTrack,
+    setSubtitleTrack,
   } = usePlayback({
     itemId: itemId!,
     startTimeTicks,
@@ -102,6 +135,17 @@ export default function PlayerScreen() {
   // Track playing state via useEvent
   const { isPlaying } = useEvent(player, 'playingChange', {
     isPlaying: player.playing,
+  });
+
+  // Controls visibility with auto-hide
+  const {
+    visible: controlsVisible,
+    toggle: toggleControls,
+    resetTimer: resetControlsTimer,
+    pauseTimer: pauseControlsTimer,
+  } = useControlsVisibility({
+    isPlaying,
+    initialVisible: true,
   });
 
   // Track status changes for buffering and errors
@@ -152,12 +196,94 @@ export default function PlayerScreen() {
     router.back();
   }, [router]);
 
+  // Play/pause toggle
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [player, isPlaying]);
+
+  // Seek by relative amount
+  const handleSeekBy = useCallback(
+    (seconds: number) => {
+      const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
+      player.currentTime = newTime;
+      resetControlsTimer();
+    },
+    [player, currentTime, duration, resetControlsTimer]
+  );
+
+  // Seek backward
+  const handleSeekBackward = useCallback(() => {
+    handleSeekBy(-SEEK_BACKWARD_AMOUNT);
+  }, [handleSeekBy]);
+
+  // Seek forward
+  const handleSeekForward = useCallback(() => {
+    handleSeekBy(SEEK_FORWARD_AMOUNT);
+  }, [handleSeekBy]);
+
+  // Seek to absolute time
+  const handleSeekTo = useCallback(
+    (seconds: number) => {
+      player.currentTime = seconds;
+    },
+    [player]
+  );
+
   // Skip segment handler (for intro, outro, etc.)
   const handleSkipSegment = useCallback(
     (endTimeSeconds: number) => {
       player.currentTime = endTimeSeconds;
     },
     [player]
+  );
+
+  // Enter Picture-in-Picture mode
+  const handleEnterPiP = useCallback(() => {
+    try {
+      videoViewRef.current?.startPictureInPicture();
+    } catch (e) {
+      console.warn('Failed to enter PiP:', e);
+    }
+  }, []);
+
+  // Subtitle selector handlers
+  const handleOpenSubtitles = useCallback(() => {
+    setShowSubtitleSelector(true);
+    pauseControlsTimer();
+  }, [pauseControlsTimer]);
+
+  const handleCloseSubtitles = useCallback(() => {
+    setShowSubtitleSelector(false);
+    resetControlsTimer();
+  }, [resetControlsTimer]);
+
+  const handleSelectSubtitle = useCallback(
+    (index: number) => {
+      setSubtitleTrack(index);
+    },
+    [setSubtitleTrack]
+  );
+
+  // Audio selector handlers
+  const handleOpenAudio = useCallback(() => {
+    setShowAudioSelector(true);
+    pauseControlsTimer();
+  }, [pauseControlsTimer]);
+
+  const handleCloseAudio = useCallback(() => {
+    setShowAudioSelector(false);
+    resetControlsTimer();
+  }, [resetControlsTimer]);
+
+  const handleSelectAudio = useCallback(
+    (index: number) => {
+      setAudioTrack(index);
+    },
+    [setAudioTrack]
   );
 
   // Next episode handlers
@@ -172,6 +298,20 @@ export default function PlayerScreen() {
     setShowNextEpisode(false);
   }, []);
 
+  // Gesture handlers for double-tap seeking
+  const handleDoubleTapLeft = useCallback(() => {
+    handleSeekBy(-SEEK_BACKWARD_AMOUNT);
+  }, [handleSeekBy]);
+
+  const handleDoubleTapRight = useCallback(() => {
+    handleSeekBy(SEEK_FORWARD_AMOUNT);
+  }, [handleSeekBy]);
+
+  // TV activity handler
+  const handleTVActivity = useCallback(() => {
+    resetControlsTimer();
+  }, [resetControlsTimer]);
+
   // Debug: Log playback info
   useEffect(() => {
     if (playbackInfo) {
@@ -182,6 +322,20 @@ export default function PlayerScreen() {
       });
     }
   }, [playbackInfo]);
+
+  // Build title for display
+  const displayTitle = useMemo(() => {
+    if (!item) return '';
+    if (item.Type === 'Episode' && item.SeriesName) {
+      const epInfo = item.ParentIndexNumber
+        ? `S${item.ParentIndexNumber}E${item.IndexNumber}`
+        : item.IndexNumber
+          ? `E${item.IndexNumber}`
+          : '';
+      return epInfo ? `${item.SeriesName} - ${epInfo}` : item.SeriesName;
+    }
+    return item.Name ?? '';
+  }, [item]);
 
   // Loading state
   if (playbackLoading) {
@@ -238,22 +392,158 @@ export default function PlayerScreen() {
     );
   }
 
+  // TV platform uses native controls with TV-specific overlay
+  if (isTV) {
+    return (
+      <View style={styles.container}>
+        <VideoView
+          player={player}
+          style={styles.video}
+          contentFit="contain"
+          nativeControls={false}
+          allowsPictureInPicture
+        />
+
+        {/* TV Player Controls */}
+        <TVPlayerControls
+          visible={controlsVisible}
+          isPlaying={isPlaying}
+          isBuffering={isBuffering}
+          currentTime={currentTime}
+          duration={duration}
+          title={item?.SeriesName ?? item?.Name ?? undefined}
+          subtitle={displayTitle !== (item?.SeriesName ?? item?.Name) ? displayTitle : undefined}
+          playMethod={playbackInfo.playMethod as 'DirectPlay' | 'DirectStream' | 'Transcode'}
+          audioTrackCount={playbackInfo.audioTracks.length}
+          subtitleTrackCount={playbackInfo.subtitleTracks.length}
+          subtitlesEnabled={
+            playbackInfo.selectedSubtitleIndex != null &&
+            playbackInfo.selectedSubtitleIndex >= 0
+          }
+          onPlayPause={handlePlayPause}
+          onSeekBy={handleSeekBy}
+          onSeekTo={handleSeekTo}
+          onBack={handleClose}
+          onOpenSubtitles={handleOpenSubtitles}
+          onOpenAudio={handleOpenAudio}
+          onActivity={handleTVActivity}
+        />
+
+        {/* Buffering indicator */}
+        <BufferingIndicator visible={isBuffering && !controlsVisible} />
+
+        {/* Skip segment button */}
+        <SkipSegmentButton
+          segment={activeSegment}
+          onSkip={handleSkipSegment}
+          controlsVisible={controlsVisible}
+        />
+
+        {/* Subtitle selector modal */}
+        <SubtitleSelector
+          visible={showSubtitleSelector}
+          tracks={playbackInfo.subtitleTracks}
+          selectedIndex={playbackInfo.selectedSubtitleIndex}
+          onSelect={handleSelectSubtitle}
+          onClose={handleCloseSubtitles}
+        />
+
+        {/* Audio selector modal */}
+        <AudioSelector
+          visible={showAudioSelector}
+          tracks={playbackInfo.audioTracks}
+          selectedIndex={playbackInfo.selectedAudioIndex}
+          onSelect={handleSelectAudio}
+          onClose={handleCloseAudio}
+        />
+
+        {/* Next Episode Overlay */}
+        {nextEpisode && (
+          <NextEpisodeOverlay
+            visible={showNextEpisode}
+            nextEpisode={nextEpisode}
+            countdownSeconds={10}
+            onPlayNext={handlePlayNextEpisode}
+            onCancel={handleCancelNextEpisode}
+          />
+        )}
+      </View>
+    );
+  }
+
+  // Mobile platform uses custom controls with gesture handler
   return (
     <View style={styles.container}>
-      {/* Video Player with native controls */}
-      <VideoView
-        player={player}
-        style={styles.video}
-        contentFit="contain"
-        nativeControls={true}
-        allowsPictureInPicture
+      {/* Gesture handler wrapper for tap/double-tap */}
+      <PlayerGestureHandler
+        onTap={toggleControls}
+        onDoubleTapLeft={handleDoubleTapLeft}
+        onDoubleTapRight={handleDoubleTapRight}
+        enabled={!showSubtitleSelector && !showAudioSelector && !showNextEpisode}
+      >
+        {/* Video Player with custom controls */}
+        <VideoView
+          ref={videoViewRef}
+          player={player}
+          style={styles.video}
+          contentFit="contain"
+          nativeControls={false}
+          allowsPictureInPicture
+        />
+
+        {/* Buffering indicator */}
+        <BufferingIndicator visible={isBuffering} />
+
+        {/* Mobile Player Controls */}
+        <PlayerControls
+          visible={controlsVisible}
+          isPlaying={isPlaying}
+          isBuffering={isBuffering}
+          currentTime={currentTime}
+          duration={duration}
+          title={displayTitle}
+          playMethod={playbackInfo.playMethod as 'DirectPlay' | 'DirectStream' | 'Transcode'}
+          audioTrackCount={playbackInfo.audioTracks.length}
+          selectedSubtitleIndex={playbackInfo.selectedSubtitleIndex}
+          isPiPSupported={isPiPSupported}
+          onPlayPause={handlePlayPause}
+          onSeekBackward={handleSeekBackward}
+          onSeekForward={handleSeekForward}
+          onSeekTo={handleSeekTo}
+          onClose={handleClose}
+          onOpenSubtitles={handleOpenSubtitles}
+          onOpenAudio={handleOpenAudio}
+          onEnterPiP={handleEnterPiP}
+          onSeekStart={pauseControlsTimer}
+          onSeekEnd={resetControlsTimer}
+        />
+
+        {/* Skip segment button - positioned dynamically based on controls visibility */}
+        <SkipSegmentButton
+          segment={activeSegment}
+          onSkip={handleSkipSegment}
+          controlsVisible={controlsVisible}
+          bottomOffsetHidden={40}
+          bottomOffsetVisible={100}
+        />
+      </PlayerGestureHandler>
+
+      {/* Subtitle selector modal */}
+      <SubtitleSelector
+        visible={showSubtitleSelector}
+        tracks={playbackInfo.subtitleTracks}
+        selectedIndex={playbackInfo.selectedSubtitleIndex}
+        onSelect={handleSelectSubtitle}
+        onClose={handleCloseSubtitles}
       />
 
-      {/* Skip segment button (intro, outro, etc.) - floats above native controls */}
-      <SkipSegmentButton
-        segment={activeSegment}
-        onSkip={handleSkipSegment}
-        controlsVisible={true}
+      {/* Audio selector modal */}
+      <AudioSelector
+        visible={showAudioSelector}
+        tracks={playbackInfo.audioTracks}
+        selectedIndex={playbackInfo.selectedAudioIndex}
+        onSelect={handleSelectAudio}
+        onClose={handleCloseAudio}
       />
 
       {/* Next Episode Overlay */}

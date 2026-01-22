@@ -3,11 +3,13 @@
  *
  * Touch-optimized player controls for iOS and Android devices.
  * Features:
- * - Touch controls for play/pause, seek, volume
+ * - Touch controls for play/pause, seek
  * - Subtitle and audio track selection buttons
- * - Fullscreen toggle
+ * - Picture-in-Picture button
  * - Auto-hide after inactivity
  * - Gradient overlays for better visibility
+ *
+ * Note: Volume is controlled via hardware buttons on mobile.
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -19,6 +21,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,7 +30,6 @@ import Animated, {
 
 import { IconSymbol } from '@/components/ui';
 import { SeekBar } from './seek-bar';
-import { VolumeControl } from './volume-control';
 import { spacing } from '@/theme';
 
 // Auto-hide controls after this delay (ms)
@@ -52,12 +54,8 @@ export interface PlayerControlsProps {
   audioTrackCount?: number;
   /** Current subtitle index (-1 for off) */
   selectedSubtitleIndex?: number | null;
-  /** Current volume level (0-1) */
-  volume: number;
-  /** Whether audio is muted */
-  muted: boolean;
-  /** Whether fullscreen mode is active */
-  isFullscreen?: boolean;
+  /** Whether PiP is supported on this device */
+  isPiPSupported?: boolean;
   /** Callback to toggle play/pause */
   onPlayPause: () => void;
   /** Callback to seek backward (seconds) */
@@ -72,12 +70,8 @@ export interface PlayerControlsProps {
   onOpenSubtitles?: () => void;
   /** Callback to open audio selector */
   onOpenAudio?: () => void;
-  /** Callback when volume changes */
-  onVolumeChange: (volume: number) => void;
-  /** Callback when mute state changes */
-  onMutedChange: (muted: boolean) => void;
-  /** Callback to toggle fullscreen */
-  onToggleFullscreen?: () => void;
+  /** Callback to enter Picture-in-Picture mode */
+  onEnterPiP?: () => void;
   /** Callback when controls visibility should change */
   onVisibilityChange?: (visible: boolean) => void;
   /** Callback when seek starts (pause auto-hide) */
@@ -95,9 +89,7 @@ export function PlayerControls({
   playMethod,
   audioTrackCount = 0,
   selectedSubtitleIndex,
-  volume,
-  muted,
-  isFullscreen = false,
+  isPiPSupported = false,
   onPlayPause,
   onSeekBackward,
   onSeekForward,
@@ -105,9 +97,7 @@ export function PlayerControls({
   onClose,
   onOpenSubtitles,
   onOpenAudio,
-  onVolumeChange,
-  onMutedChange,
-  onToggleFullscreen,
+  onEnterPiP,
   onVisibilityChange,
   onSeekStart,
   onSeekEnd,
@@ -185,6 +175,20 @@ export function PlayerControls({
       style={[styles.container, animatedContainerStyle]}
       pointerEvents={visible ? 'box-none' : 'none'}
     >
+      {/* Top gradient */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.7)', 'transparent']}
+        style={styles.topGradient}
+        pointerEvents="none"
+      />
+
+      {/* Bottom gradient */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={styles.bottomGradient}
+        pointerEvents="none"
+      />
+
       <SafeAreaView style={styles.safeArea} pointerEvents="box-none">
         {/* Top bar - Close button, title, and options */}
         <View style={styles.topBar}>
@@ -237,16 +241,16 @@ export function PlayerControls({
               </Pressable>
             )}
 
-            {/* Fullscreen button */}
-            {onToggleFullscreen && (
+            {/* Picture-in-Picture button */}
+            {isPiPSupported && onEnterPiP && (
               <Pressable
                 style={styles.topBarButton}
-                onPress={onToggleFullscreen}
-                accessibilityLabel={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                onPress={onEnterPiP}
+                accessibilityLabel="Enter Picture in Picture"
                 accessibilityRole="button"
               >
                 <IconSymbol
-                  name={isFullscreen ? 'arrow.down.right.and.arrow.up.left' : 'arrow.up.left.and.arrow.down.right'}
+                  name="pip.enter"
                   size={20}
                   color="#fff"
                 />
@@ -289,7 +293,7 @@ export function PlayerControls({
           </Pressable>
         </View>
 
-        {/* Bottom bar - Seek bar and volume */}
+        {/* Bottom bar - Seek bar only (volume via hardware buttons) */}
         <View style={styles.bottomBar}>
           <View style={styles.seekBarContainer}>
             <SeekBar
@@ -300,14 +304,6 @@ export function PlayerControls({
               onSeekEnd={handleSeekEnd}
             />
           </View>
-          <VolumeControl
-            volume={volume}
-            muted={muted}
-            onVolumeChange={onVolumeChange}
-            onMutedChange={onMutedChange}
-            onInteractionStart={handleSeekStart}
-            onInteractionEnd={handleSeekEnd}
-          />
         </View>
       </SafeAreaView>
     </Animated.View>
@@ -317,6 +313,20 @@ export function PlayerControls({
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
+  },
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  bottomGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
   },
   safeArea: {
     flex: 1,
@@ -328,7 +338,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: Platform.OS === 'ios' ? spacing.sm : spacing.md,
     paddingBottom: spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   closeButton: {
     width: 44,
@@ -382,13 +391,9 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingBottom: Platform.OS === 'ios' ? spacing.sm : spacing.md,
     paddingTop: spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    gap: spacing.sm,
   },
   seekBarContainer: {
     flex: 1,
