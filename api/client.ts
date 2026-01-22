@@ -65,4 +65,12 @@ export function configureApiClient(): void {
   });
 }
 
+/**
+ * Get the cached device ID synchronously.
+ * Returns null if not yet initialized (call initializeApiClient first).
+ */
+export function getCachedDeviceId(): string | null {
+  return cachedDeviceId;
+}
+
 export { client };

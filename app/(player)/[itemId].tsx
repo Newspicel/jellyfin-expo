@@ -9,12 +9,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Video, {
-  type VideoRef,
-  type OnLoadData,
-  type OnProgressData,
-  type OnBufferData,
-} from 'react-native-video';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEvent, useEventListener } from 'expo';
 import { useQuery } from '@tanstack/react-query';
 
 import { usePlayback } from '@/hooks/use-playback';
@@ -31,18 +27,18 @@ export default function PlayerScreen() {
     startTimeTicks?: string;
   }>();
   const router = useRouter();
-  const videoRef = useRef<VideoRef>(null);
 
   // Parse start time from params (for resume functionality)
   const startTimeTicks = startTimeParam ? parseInt(startTimeParam, 10) : 0;
 
-  // Video state
-  const [isPaused, setIsPaused] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // UI state
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Time tracking state (updated via events)
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   // Controls auto-hide timer
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -66,6 +62,41 @@ export default function PlayerScreen() {
     enabled: !!itemId,
   });
 
+  // Create video player with expo-video
+  const player = useVideoPlayer(playbackInfo?.streamUrl ?? null, (p) => {
+    p.timeUpdateEventInterval = 1;
+    p.play();
+  });
+
+  // Track playing state via useEvent
+  const { isPlaying } = useEvent(player, 'playingChange', {
+    isPlaying: player.playing,
+  });
+
+  // Track status changes for buffering and errors
+  useEventListener(player, 'statusChange', ({ status, error: playerError }) => {
+    if (status === 'loading') {
+      setIsBuffering(true);
+    } else if (status === 'readyToPlay') {
+      setIsBuffering(false);
+      setDuration(player.duration);
+    } else if (status === 'error') {
+      setIsBuffering(false);
+      setError(playerError?.message ?? 'Playback error occurred');
+    }
+  });
+
+  // Track time updates
+  useEventListener(player, 'timeUpdate', ({ currentTime: time }) => {
+    setCurrentTime(time);
+  });
+
+  // Track playback end
+  useEventListener(player, 'playToEnd', () => {
+    player.pause();
+    setShowControls(true);
+  });
+
   // Reset controls hide timer
   const resetHideTimer = useCallback(() => {
     if (hideControlsTimer.current) {
@@ -73,11 +104,11 @@ export default function PlayerScreen() {
     }
     setShowControls(true);
     hideControlsTimer.current = setTimeout(() => {
-      if (!isPaused) {
+      if (isPlaying) {
         setShowControls(false);
       }
     }, CONTROLS_HIDE_DELAY);
-  }, [isPaused]);
+  }, [isPlaying]);
 
   // Handle screen tap to toggle controls
   const handleScreenTap = useCallback(() => {
@@ -93,9 +124,13 @@ export default function PlayerScreen() {
 
   // Play/pause toggle
   const togglePlayPause = useCallback(() => {
-    setIsPaused((prev) => !prev);
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
     resetHideTimer();
-  }, [resetHideTimer]);
+  }, [isPlaying, player, resetHideTimer]);
 
   // Close player
   const handleClose = useCallback(() => {
@@ -104,46 +139,14 @@ export default function PlayerScreen() {
 
   // Seek handlers
   const seekBackward = useCallback(() => {
-    if (videoRef.current) {
-      const newTime = Math.max(0, currentTime - 10);
-      videoRef.current.seek(newTime);
-      resetHideTimer();
-    }
-  }, [currentTime, resetHideTimer]);
+    player.seekBy(-10);
+    resetHideTimer();
+  }, [player, resetHideTimer]);
 
   const seekForward = useCallback(() => {
-    if (videoRef.current) {
-      const newTime = Math.min(duration, currentTime + 30);
-      videoRef.current.seek(newTime);
-      resetHideTimer();
-    }
-  }, [currentTime, duration, resetHideTimer]);
-
-  // Video event handlers
-  const handleLoad = useCallback((data: OnLoadData) => {
-    setDuration(data.duration);
-    setIsBuffering(false);
-  }, []);
-
-  const handleProgress = useCallback((data: OnProgressData) => {
-    setCurrentTime(data.currentTime);
-  }, []);
-
-  const handleBuffer = useCallback((data: OnBufferData) => {
-    setIsBuffering(data.isBuffering);
-  }, []);
-
-  const handleError = useCallback((err: { error: { errorString?: string } }) => {
-    console.error('Video playback error:', err);
-    setError(err.error?.errorString || 'Playback error occurred');
-    setIsBuffering(false);
-  }, []);
-
-  const handleEnd = useCallback(() => {
-    // Video ended - could auto-play next episode here
-    setIsPaused(true);
-    setShowControls(true);
-  }, []);
+    player.seekBy(30);
+    resetHideTimer();
+  }, [player, resetHideTimer]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -156,10 +159,22 @@ export default function PlayerScreen() {
 
   // Start auto-hide timer when playing
   useEffect(() => {
-    if (!isPaused && showControls) {
+    if (isPlaying && showControls) {
       resetHideTimer();
     }
-  }, [isPaused, showControls, resetHideTimer]);
+  }, [isPlaying, showControls, resetHideTimer]);
+
+  // Debug: Log playback info
+  useEffect(() => {
+    if (playbackInfo) {
+      console.log('Playback info:', {
+        streamUrl: playbackInfo.streamUrl,
+        playMethod: playbackInfo.playMethod,
+        container: playbackInfo.mediaSource.Container,
+        transcodingUrl: playbackInfo.mediaSource.TranscodingUrl,
+      });
+    }
+  }, [playbackInfo]);
 
   // Format time for display (seconds to hh:mm:ss)
   const formatTime = (seconds: number): string => {
@@ -241,23 +256,12 @@ export default function PlayerScreen() {
     <View style={styles.container}>
       {/* Video Player */}
       <Pressable style={styles.videoContainer} onPress={handleScreenTap}>
-        <Video
-          ref={videoRef}
-          source={{ uri: playbackInfo.streamUrl }}
+        <VideoView
+          player={player}
           style={styles.video}
-          resizeMode="contain"
-          paused={isPaused}
-          onLoad={handleLoad}
-          onProgress={handleProgress}
-          onBuffer={handleBuffer}
-          onError={handleError}
-          onEnd={handleEnd}
-          progressUpdateInterval={1000}
-          playInBackground={false}
-          playWhenInactive={false}
-          ignoreSilentSwitch="ignore"
-          allowsExternalPlayback={true}
-          preventsDisplaySleepDuringVideoPlayback={true}
+          contentFit="contain"
+          nativeControls={false}
+          allowsPictureInPicture
         />
       </Pressable>
 
@@ -296,7 +300,7 @@ export default function PlayerScreen() {
             </Pressable>
             <Pressable style={styles.playPauseButton} onPress={togglePlayPause}>
               <IconSymbol
-                name={isPaused ? 'play.fill' : 'pause.fill'}
+                name={isPlaying ? 'pause.fill' : 'play.fill'}
                 size={48}
                 color="#fff"
               />

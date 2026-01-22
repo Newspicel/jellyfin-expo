@@ -10,10 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.jellyfin-expo",
-      "infoPlist": {
-        "UIBackgroundModes": ["audio"]
-      }
+      "bundleIdentifier": "com.anonymous.jellyfin-expo"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,7 +42,14 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

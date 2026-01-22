@@ -15,6 +15,7 @@ import {
   getPostedPlaybackInfoQueryKey,
 } from '@/api/generated/@tanstack/react-query.gen';
 import type {
+  DeviceProfile,
   MediaSourceInfo,
   MediaStream,
   PlaybackInfoResponse,
@@ -22,6 +23,7 @@ import type {
 import { getDeviceProfile } from '@/api/device-profile';
 import { useServerStore } from '@/stores/server.store';
 import { useAuthStore } from '@/stores/auth.store';
+import { getCachedDeviceId } from '@/api/client';
 
 // =============================================================================
 // TYPES
@@ -87,15 +89,65 @@ export interface UsePlaybackResult {
 // =============================================================================
 
 /**
- * Determine the play method from a media source
+ * Get the list of supported video containers for DirectPlay from the device profile
  */
-function getPlayMethod(source: MediaSourceInfo): PlayMethod {
-  if (source.SupportsDirectPlay) {
-    return 'DirectPlay';
+function getSupportedVideoContainers(profile: DeviceProfile): string[] {
+  const containers: string[] = [];
+
+  for (const directPlayProfile of profile.DirectPlayProfiles ?? []) {
+    if (directPlayProfile.Type === 'Video' && directPlayProfile.Container) {
+      // Container is comma-separated list
+      const profileContainers = directPlayProfile.Container.toLowerCase().split(',');
+      containers.push(...profileContainers.map((c) => c.trim()));
+    }
   }
-  if (source.SupportsDirectStream) {
-    return 'DirectStream';
+
+  return containers;
+}
+
+/**
+ * Check if a container is supported for DirectPlay based on the device profile
+ */
+function isContainerSupportedForDirectPlay(
+  container: string | undefined | null,
+  profile: DeviceProfile
+): boolean {
+  if (!container) return false;
+
+  const supportedContainers = getSupportedVideoContainers(profile);
+  const normalizedContainer = container.toLowerCase().trim();
+
+  return supportedContainers.includes(normalizedContainer);
+}
+
+/**
+ * Determine the play method from a media source
+ * Also validates container compatibility with device profile for DirectPlay/DirectStream
+ *
+ * Important: Both DirectPlay AND DirectStream serve the original container format.
+ * If the container isn't supported (e.g., MKV on iOS), we MUST use transcoding.
+ */
+function getPlayMethod(source: MediaSourceInfo, deviceProfile: DeviceProfile): PlayMethod {
+  const containerSupported = isContainerSupportedForDirectPlay(source.Container, deviceProfile);
+
+  // If container is supported, use DirectPlay or DirectStream
+  if (containerSupported) {
+    if (source.SupportsDirectPlay) {
+      return 'DirectPlay';
+    }
+    if (source.SupportsDirectStream) {
+      return 'DirectStream';
+    }
+  } else {
+    // Container not supported - MUST transcode to a compatible format
+    // DirectStream won't help because it still serves the original container
+    console.warn(
+      `Container "${source.Container}" is not supported on this device. ` +
+      `Transcoding is required.`
+    );
   }
+
+  // Transcoding is needed (either container not supported or no direct options)
   return 'Transcode';
 }
 
@@ -169,19 +221,22 @@ function getDefaultSubtitleIndex(source: MediaSourceInfo): number | null {
 // =============================================================================
 
 /**
- * Build the stream URL based on play method
+ * Build an HLS transcoding URL using the master.m3u8 endpoint
+ * This is used when the server doesn't provide a TranscodingUrl but transcoding is required
  */
-function buildStreamUrl(
+function buildHlsTranscodingUrl(
   serverUrl: string,
   itemId: string,
   source: MediaSourceInfo,
-  playMethod: PlayMethod,
+  deviceProfile: DeviceProfile,
   options: {
     audioStreamIndex?: number | null;
     subtitleStreamIndex?: number | null;
     startTimeTicks?: number;
     maxStreamingBitrate?: number;
     playSessionId?: string | null;
+    accessToken?: string | null;
+    deviceId?: string | null;
   }
 ): string {
   const {
@@ -190,13 +245,156 @@ function buildStreamUrl(
     startTimeTicks,
     maxStreamingBitrate,
     playSessionId,
+    accessToken,
+    deviceId,
   } = options;
 
-  // For transcoding, server provides the URL
-  if (playMethod === 'Transcode' && source.TranscodingUrl) {
-    // TranscodingUrl is relative to the server
-    const url = new URL(source.TranscodingUrl, serverUrl);
-    return url.toString();
+  // Determine if we need to burn in subtitles
+  // When burning in subtitles, we CANNOT copy the video stream
+  const needsSubtitleBurnIn =
+    subtitleStreamIndex !== undefined &&
+    subtitleStreamIndex !== null &&
+    subtitleStreamIndex >= 0;
+
+  // Get transcoding settings from device profile
+  const transcodingProfile = deviceProfile.TranscodingProfiles?.find(
+    (p) => p.Type === 'Video' && p.Protocol === 'hls'
+  );
+
+  const url = new URL(`/Videos/${itemId}/master.m3u8`, serverUrl);
+  const params = url.searchParams;
+
+  // Required: media source ID
+  if (source.Id) {
+    params.set('mediaSourceId', source.Id);
+  }
+
+  // Device ID for session tracking (important for transcoding)
+  if (deviceId) {
+    params.set('deviceId', deviceId);
+  }
+
+  // Transcoding settings from device profile
+  if (transcodingProfile) {
+    if (transcodingProfile.Container) {
+      params.set('segmentContainer', transcodingProfile.Container);
+    }
+    if (transcodingProfile.VideoCodec) {
+      params.set('videoCodec', transcodingProfile.VideoCodec);
+    }
+    if (transcodingProfile.AudioCodec) {
+      params.set('audioCodec', transcodingProfile.AudioCodec);
+    }
+    if (transcodingProfile.MaxAudioChannels) {
+      params.set('maxAudioChannels', transcodingProfile.MaxAudioChannels);
+    }
+    if (transcodingProfile.SegmentLength) {
+      params.set('segmentLength', String(transcodingProfile.SegmentLength));
+    }
+    if (transcodingProfile.MinSegments) {
+      params.set('minSegments', String(transcodingProfile.MinSegments));
+    }
+  } else {
+    // Fallback defaults for HLS transcoding
+    params.set('segmentContainer', 'ts');
+    params.set('videoCodec', 'h264');
+    params.set('audioCodec', 'aac');
+    params.set('maxAudioChannels', '6');
+  }
+
+  // Audio stream
+  if (audioStreamIndex !== undefined && audioStreamIndex !== null) {
+    params.set('audioStreamIndex', String(audioStreamIndex));
+  }
+
+  // Subtitle stream - burn-in for HLS compatibility
+  if (needsSubtitleBurnIn) {
+    params.set('subtitleStreamIndex', String(subtitleStreamIndex));
+    params.set('subtitleMethod', 'Encode');
+  }
+
+  // Start position
+  if (startTimeTicks) {
+    params.set('startTimeTicks', String(startTimeTicks));
+  }
+
+  // Bitrate limit
+  if (maxStreamingBitrate) {
+    params.set('maxStreamingBitrate', String(maxStreamingBitrate));
+  }
+
+  // Play session ID for progress tracking
+  if (playSessionId) {
+    params.set('playSessionId', playSessionId);
+  }
+
+  // IMPORTANT: When burning in subtitles, video stream copy is NOT possible
+  // The video must be re-encoded to include the subtitle overlay
+  params.set('allowVideoStreamCopy', needsSubtitleBurnIn ? 'false' : 'true');
+  params.set('allowAudioStreamCopy', 'true');
+
+  // Break on non-key frames for better seeking
+  params.set('breakOnNonKeyFrames', 'false');
+
+  // Add API key for authentication (required for expo-video which doesn't use API client interceptors)
+  if (accessToken) {
+    params.set('api_key', accessToken);
+  }
+
+  return url.toString();
+}
+
+/**
+ * Build the stream URL based on play method
+ */
+function buildStreamUrl(
+  serverUrl: string,
+  itemId: string,
+  source: MediaSourceInfo,
+  playMethod: PlayMethod,
+  deviceProfile: DeviceProfile,
+  options: {
+    audioStreamIndex?: number | null;
+    subtitleStreamIndex?: number | null;
+    startTimeTicks?: number;
+    maxStreamingBitrate?: number;
+    playSessionId?: string | null;
+    accessToken?: string | null;
+    deviceId?: string | null;
+  }
+): string {
+  const {
+    audioStreamIndex,
+    subtitleStreamIndex,
+    startTimeTicks,
+    maxStreamingBitrate,
+    playSessionId,
+    accessToken,
+    deviceId,
+  } = options;
+
+  // For transcoding, use server-provided URL or build our own HLS URL
+  if (playMethod === 'Transcode') {
+    if (source.TranscodingUrl) {
+      // Server provided a transcoding URL - use it, but add auth
+      const url = new URL(source.TranscodingUrl, serverUrl);
+      if (accessToken) {
+        url.searchParams.set('api_key', accessToken);
+      }
+      return url.toString();
+    }
+
+    // Build HLS transcoding URL ourselves
+    console.log('Building HLS transcoding URL (server did not provide one)');
+    return buildHlsTranscodingUrl(serverUrl, itemId, source, deviceProfile, {
+      audioStreamIndex,
+      subtitleStreamIndex,
+      startTimeTicks,
+      maxStreamingBitrate,
+      playSessionId,
+      accessToken,
+      deviceId,
+    });
   }
 
   // Build direct play/stream URL
@@ -241,6 +439,11 @@ function buildStreamUrl(
   // Play session ID for progress tracking
   if (playSessionId) {
     params.set('playSessionId', playSessionId);
+  }
+
+  // Add API key for authentication (required for expo-video which doesn't use API client interceptors)
+  if (accessToken) {
+    params.set('api_key', accessToken);
   }
 
   return url.toString();
@@ -319,6 +522,13 @@ export function usePlayback(options: UsePlaybackOptions): UsePlaybackResult {
         SubtitleStreamIndex: selectedSubtitleIndex,
         MediaSourceId: mediaSourceId,
         DeviceProfile: deviceProfile,
+        // Explicitly enable all play methods so server provides all options
+        EnableDirectPlay: true,
+        EnableDirectStream: true,
+        EnableTranscoding: true,
+        // Allow stream copying when possible (more efficient than full transcode)
+        AllowVideoStreamCopy: true,
+        AllowAudioStreamCopy: true,
       },
     }),
     enabled: enabled && !!server && !!credentials,
@@ -344,8 +554,8 @@ export function usePlayback(options: UsePlaybackOptions): UsePlaybackResult {
       return null;
     }
 
-    // Determine play method
-    const playMethod = getPlayMethod(source);
+    // Determine play method (validates container compatibility)
+    const playMethod = getPlayMethod(source, deviceProfile);
 
     // Get available tracks
     const audioTracks = filterStreamsByType(source.MediaStreams, 'Audio');
@@ -356,12 +566,15 @@ export function usePlayback(options: UsePlaybackOptions): UsePlaybackResult {
     const subtitleIndex = selectedSubtitleIndex ?? getDefaultSubtitleIndex(source);
 
     // Build stream URL
-    const streamUrl = buildStreamUrl(server.url, itemId, source, playMethod, {
+    const deviceId = getCachedDeviceId();
+    const streamUrl = buildStreamUrl(server.url, itemId, source, playMethod, deviceProfile, {
       audioStreamIndex: audioIndex,
       subtitleStreamIndex: subtitleIndex,
       startTimeTicks,
       maxStreamingBitrate: maxStreamingBitrate ?? deviceProfile.MaxStreamingBitrate ?? undefined,
       playSessionId: PlaySessionId,
+      accessToken: credentials?.accessToken,
+      deviceId,
     });
 
     return {
@@ -378,13 +591,14 @@ export function usePlayback(options: UsePlaybackOptions): UsePlaybackResult {
   }, [
     playbackInfoResponse,
     server,
+    credentials,
     itemId,
     mediaSourceId,
     selectedAudioIndex,
     selectedSubtitleIndex,
     startTimeTicks,
     maxStreamingBitrate,
-    deviceProfile.MaxStreamingBitrate,
+    deviceProfile,
   ]);
 
   // Track selection handlers

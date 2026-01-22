@@ -232,11 +232,11 @@ function createAudioCodecProfile(
 
 function createIOSProfile(): DeviceProfile {
   // iOS supports: H.264, HEVC (8-bit & 10-bit on newer devices)
-  // Containers: MP4, MOV, M4V, MKV (via AVFoundation)
+  // Containers: MP4, MOV, M4V only (AVFoundation does NOT support MKV/WebM)
   // Audio: AAC, AC3, E-AC3, ALAC, FLAC, MP3
-  const videoContainers = 'mp4,m4v,mov,mkv,webm';
-  const videoCodecs = 'h264,hevc,vp9';
-  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3,opus';
+  const videoContainers = 'mp4,m4v,mov';
+  const videoCodecs = 'h264,hevc';
+  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3';
 
   return {
     Name: 'Jellyfin iOS',
@@ -294,10 +294,11 @@ function createIOSProfile(): DeviceProfile {
 
 function createTvOSProfile(): DeviceProfile {
   // tvOS supports same as iOS plus better audio passthrough
+  // Containers: MP4, MOV, M4V only (AVFoundation does NOT support MKV/WebM)
   // Dolby Atmos support via E-AC3 JOC
-  const videoContainers = 'mp4,m4v,mov,mkv,webm';
-  const videoCodecs = 'h264,hevc,vp9';
-  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3,opus,truehd';
+  const videoContainers = 'mp4,m4v,mov';
+  const videoCodecs = 'h264,hevc';
+  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3,truehd';
 
   return {
     Name: 'Jellyfin tvOS',
@@ -480,10 +481,11 @@ function createAndroidTVProfile(): DeviceProfile {
 // =============================================================================
 
 function createMacOSProfile(): DeviceProfile {
-  // macOS via Catalyst - similar to iOS but with broader support
-  const videoContainers = 'mp4,m4v,mov,mkv,webm,avi';
-  const videoCodecs = 'h264,hevc,vp9,av1';
-  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3,opus,vorbis';
+  // macOS via Catalyst - uses AVFoundation, same container limitations as iOS
+  // Containers: MP4, MOV, M4V only (AVFoundation does NOT support MKV/WebM/AVI)
+  const videoContainers = 'mp4,m4v,mov';
+  const videoCodecs = 'h264,hevc';
+  const audioCodecs = 'aac,ac3,eac3,alac,flac,mp3';
 
   return {
     Name: 'Jellyfin macOS',
@@ -672,7 +674,9 @@ function createWebProfile(): DeviceProfile {
 export function getDeviceProfile(): DeviceProfile {
   // Most specific matches first
   if (isAppleTV) {
-    return createTvOSProfile();
+    const profile = createTvOSProfile();
+    console.log('Using tvOS profile, DirectPlay containers:', profile.DirectPlayProfiles?.[0]?.Container);
+    return profile;
   }
 
   if (isAndroidTV) {
@@ -680,7 +684,9 @@ export function getDeviceProfile(): DeviceProfile {
   }
 
   if (isIOS) {
-    return createIOSProfile();
+    const profile = createIOSProfile();
+    console.log('Using iOS profile, DirectPlay containers:', profile.DirectPlayProfiles?.[0]?.Container);
+    return profile;
   }
 
   if (isAndroid) {
