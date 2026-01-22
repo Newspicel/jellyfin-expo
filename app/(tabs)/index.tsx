@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MediaRow } from '@/components/media/media-row';
 import { useAuthStore } from '@/stores/auth.store';
 import { useServerStore } from '@/stores/server.store';
+import { useColors, spacing } from '@/theme';
 import {
   getResumeItemsOptions,
   getNextUpOptions,
@@ -17,6 +18,7 @@ import { useState, useCallback } from 'react';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const currentUser = useAuthStore((s) => s.currentUser);
   const currentServer = useServerStore((s) => s.getCurrentServer());
   const [refreshing, setRefreshing] = useState(false);
@@ -122,10 +124,14 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16 },
+          { paddingTop: insets.top + spacing.lg },
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text.secondary}
+          />
         }
       >
         <ThemedText type="title" style={styles.greeting}>
@@ -133,7 +139,9 @@ export default function HomeScreen() {
         </ThemedText>
 
         {currentServer && (
-          <ThemedText style={styles.serverName}>{currentServer.name}</ThemedText>
+          <ThemedText style={[styles.serverName, { color: colors.text.secondary }]}>
+            {currentServer.name}
+          </ThemedText>
         )}
 
         <MediaRow
@@ -173,16 +181,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: spacing['3xl'],
   },
   greeting: {
-    paddingHorizontal: 16,
-    marginBottom: 4,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xs,
   },
   serverName: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-    opacity: 0.6,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing['2xl'],
     fontSize: 14,
   },
 });

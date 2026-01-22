@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import type { BaseItemDto } from '@/api/generated';
 import { ThemedText } from '@/components/themed-text';
 import { getPrimaryImageUrl } from '@/lib/images';
+import { useColors, spacing, radii } from '@/theme';
 
 interface PosterCardProps {
   item: BaseItemDto;
@@ -21,6 +22,7 @@ export function PosterCard({
   showProgress = true,
 }: PosterCardProps) {
   const router = useRouter();
+  const colors = useColors();
   const imageUrl = getPrimaryImageUrl(item, width * 2); // 2x for retina
   const height = width / ASPECT_RATIO;
 
@@ -81,7 +83,12 @@ export function PosterCard({
 
   return (
     <Pressable style={[styles.container, { width }]} onPress={handlePress}>
-      <View style={[styles.imageContainer, { width, height }]}>
+      <View
+        style={[
+          styles.imageContainer,
+          { width, height, backgroundColor: colors.background.secondary },
+        ]}
+      >
         {imageUrl ? (
           <Image
             source={{ uri: imageUrl }}
@@ -90,19 +97,30 @@ export function PosterCard({
             transition={200}
           />
         ) : (
-          <View style={[styles.placeholder, styles.image]} />
+          <View
+            style={[
+              styles.placeholder,
+              styles.image,
+              { backgroundColor: colors.background.tertiary },
+            ]}
+          />
         )}
 
         {/* Progress bar */}
         {showProgress && progress > 0 && (
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBar, { width: `${progress}%` }]} />
+            <View
+              style={[
+                styles.progressBar,
+                { width: `${progress}%`, backgroundColor: colors.media.progress },
+              ]}
+            />
           </View>
         )}
 
         {/* Watched indicator */}
         {item.UserData?.Played && (
-          <View style={styles.watchedBadge}>
+          <View style={[styles.watchedBadge, { backgroundColor: colors.media.watched }]}>
             <ThemedText style={styles.watchedText}>✓</ThemedText>
           </View>
         )}
@@ -115,7 +133,10 @@ export function PosterCard({
       )}
 
       {showTitle && item.ProductionYear && (
-        <ThemedText numberOfLines={1} style={styles.year}>
+        <ThemedText
+          numberOfLines={1}
+          style={[styles.year, { color: colors.text.secondary }]}
+        >
           {item.ProductionYear}
         </ThemedText>
       )}
@@ -128,17 +149,14 @@ const styles = StyleSheet.create({
     // marginRight handled by parent layout
   },
   imageContainer: {
-    borderRadius: 8,
+    borderRadius: radii.sm,
     overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
   },
   image: {
     width: '100%',
     height: '100%',
   },
-  placeholder: {
-    backgroundColor: '#3a3a3a',
-  },
+  placeholder: {},
   progressContainer: {
     position: 'absolute',
     bottom: 0,
@@ -149,14 +167,12 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#00a4dc',
   },
   watchedBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#00a4dc',
-    borderRadius: 10,
+    top: spacing.xs,
+    right: spacing.xs,
+    borderRadius: radii.full,
     width: 20,
     height: 20,
     alignItems: 'center',
@@ -167,12 +183,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   title: {
-    marginTop: 6,
+    marginTop: spacing.xs,
     fontSize: 13,
     fontWeight: '500',
   },
   year: {
     fontSize: 12,
-    opacity: 0.6,
   },
 });

@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { Button, Input } from '@/components/ui';
 import { useServerStore, type Server } from '@/stores/server.store';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors, spacing, radii } from '@/theme';
 
 function generateServerId(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -28,15 +26,13 @@ function generateServerId(): string {
 export default function ServerSelectScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [serverUrl, setServerUrl] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
 
   const servers = useServerStore((state) => state.servers);
   const addServer = useServerStore((state) => state.addServer);
   const setCurrentServer = useServerStore((state) => state.setCurrentServer);
-
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
 
   const handleConnect = async () => {
     if (!serverUrl.trim()) {
@@ -91,22 +87,20 @@ export default function ServerSelectScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled"
       >
         <ThemedText type="title" style={styles.title}>
           Connect to Jellyfin
         </ThemedText>
-        <ThemedText style={styles.subtitle}>
+        <ThemedText style={[styles.subtitle, { color: colors.text.secondary }]}>
           Enter your server address to get started
         </ThemedText>
 
         <View style={styles.inputContainer}>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
+          <Input
             placeholder="https://jellyfin.example.com"
-            placeholderTextColor={`${colors.text}50`}
             value={serverUrl}
             onChangeText={setServerUrl}
             autoCapitalize="none"
@@ -115,33 +109,33 @@ export default function ServerSelectScreen() {
             returnKeyType="go"
             onSubmitEditing={handleConnect}
           />
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.tint }]}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={isConnecting}
             onPress={handleConnect}
-            disabled={isConnecting}
           >
-            {isConnecting ? (
-              <ActivityIndicator color={colorScheme === 'dark' ? '#000' : '#fff'} />
-            ) : (
-              <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? '#000' : '#fff' }]}>
-                Connect
-              </ThemedText>
-            )}
-          </TouchableOpacity>
+            Connect
+          </Button>
         </View>
 
         {servers.length > 0 && (
           <View style={styles.serversSection}>
-            <ThemedText style={styles.sectionTitle}>Recent Servers</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
+              Recent Servers
+            </ThemedText>
             {servers.map((server) => (
-              <TouchableOpacity
+              <Pressable
                 key={server.id}
-                style={styles.serverItem}
+                style={[styles.serverItem, { backgroundColor: colors.background.secondary }]}
                 onPress={() => handleSelectServer(server)}
               >
                 <ThemedText style={styles.serverName}>{server.name}</ThemedText>
-                <ThemedText style={styles.serverUrl}>{server.url}</ThemedText>
-              </TouchableOpacity>
+                <ThemedText style={[styles.serverUrl, { color: colors.text.secondary }]}>
+                  {server.url}
+                </ThemedText>
+              </Pressable>
             ))}
           </View>
         )}
@@ -155,59 +149,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   subtitle: {
     fontSize: 16,
-    opacity: 0.6,
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
   inputContainer: {
-    gap: 16,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  button: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
+    gap: spacing.lg,
   },
   serversSection: {
-    marginTop: 48,
+    marginTop: spacing['5xl'],
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
-    opacity: 0.5,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   serverItem: {
-    padding: 16,
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: spacing.lg,
+    borderRadius: radii.md,
+    marginBottom: spacing.md,
   },
   serverName: {
     fontSize: 17,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   serverUrl: {
     fontSize: 14,
-    opacity: 0.6,
   },
 });

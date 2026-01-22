@@ -8,7 +8,7 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
+import { useLocalSearchParams, Stack } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { IconSymbol, BackButton } from '@/components/ui';
 import { MediaRow } from '@/components/media/media-row';
 import {
   getItemOptions,
@@ -81,7 +81,6 @@ function PersonCard({ person }: { person: BaseItemPerson }) {
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const queryClient = useQueryClient();
@@ -218,14 +217,7 @@ export default function MovieDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Fixed Back Button */}
-      <Pressable
-        style={[styles.backButton, { top: insets.top + 8 }]}
-        onPress={() => router.back()}
-      >
-        <View style={[styles.backButtonInner, { backgroundColor: colors.overlay.dark }]}>
-          <IconSymbol name="chevron.left" size={24} color="#fff" />
-        </View>
-      </Pressable>
+      <BackButton />
 
       <ScrollView
         style={styles.scrollView}
@@ -521,18 +513,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 120,
-  },
-  backButton: {
-    position: 'absolute',
-    left: spacing.md,
-    zIndex: 10,
-  },
-  backButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     paddingHorizontal: spacing.md,

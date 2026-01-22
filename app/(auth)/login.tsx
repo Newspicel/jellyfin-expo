@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   View,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,16 +12,17 @@ import { Image } from 'expo-image';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { Button, Input } from '@/components/ui';
 import { useServerStore } from '@/stores/server.store';
 import { useAuthStore } from '@/stores/auth.store';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors, spacing, radii } from '@/theme';
 import { getDeviceId, getDeviceName, getClientName, getClientVersion } from '@/lib/device';
 import type { UserDto } from '@/api/generated';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,9 +32,6 @@ export default function LoginScreen() {
   const getCurrentServer = useServerStore((state) => state.getCurrentServer);
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
-
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'dark'];
 
   const server = getCurrentServer();
 
@@ -135,7 +131,7 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -143,22 +139,30 @@ export default function LoginScreen() {
           Sign In
         </ThemedText>
         {server && (
-          <ThemedText style={styles.serverName}>{server.name}</ThemedText>
+          <ThemedText style={[styles.serverName, { color: colors.text.secondary }]}>
+            {server.name}
+          </ThemedText>
         )}
 
         {publicUsers.length > 0 && (
           <View style={styles.usersSection}>
-            <ThemedText style={styles.sectionTitle}>Select User</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
+              Select User
+            </ThemedText>
             <View style={styles.usersGrid}>
               {publicUsers.map((user) => {
                 const imageUrl = getUserImageUrl(user);
                 const isSelected = selectedUserId === user.Id;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={user.Id}
                     style={[
                       styles.userCard,
-                      isSelected && { borderColor: colors.tint, borderWidth: 2 },
+                      { backgroundColor: colors.background.secondary },
+                      isSelected && {
+                        borderColor: colors.interactive.primary,
+                        borderWidth: 2,
+                      },
                     ]}
                     onPress={() => handleSelectUser(user)}
                   >
@@ -170,7 +174,13 @@ export default function LoginScreen() {
                         transition={200}
                       />
                     ) : (
-                      <View style={[styles.userAvatar, styles.userAvatarPlaceholder]}>
+                      <View
+                        style={[
+                          styles.userAvatar,
+                          styles.userAvatarPlaceholder,
+                          { backgroundColor: colors.background.tertiary },
+                        ]}
+                      >
                         <ThemedText style={styles.userAvatarInitial}>
                           {(user.Name ?? '?')[0].toUpperCase()}
                         </ThemedText>
@@ -179,7 +189,7 @@ export default function LoginScreen() {
                     <ThemedText style={styles.userCardName} numberOfLines={1}>
                       {user.Name}
                     </ThemedText>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -187,10 +197,8 @@ export default function LoginScreen() {
         )}
 
         <View style={styles.form}>
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
+          <Input
             placeholder="Username"
-            placeholderTextColor={`${colors.text}50`}
             value={username}
             onChangeText={(text) => {
               setUsername(text);
@@ -200,42 +208,37 @@ export default function LoginScreen() {
             autoCorrect={false}
             autoComplete="username"
             textContentType="username"
-            importantForAutofill="yes"
             returnKeyType="next"
           />
-          <TextInput
-            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
+          <Input
             placeholder="Password"
-            placeholderTextColor={`${colors.text}50`}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             autoComplete="password"
             textContentType="password"
-            importantForAutofill="yes"
             returnKeyType="go"
             onSubmitEditing={handleLogin}
           />
 
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.tint }]}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            loading={isLoading}
             onPress={handleLogin}
-            disabled={isLoading}
+            style={styles.signInButton}
           >
-            {isLoading ? (
-              <ActivityIndicator color={colorScheme === 'dark' ? '#000' : '#fff'} />
-            ) : (
-              <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? '#000' : '#fff' }]}>
-                Sign In
-              </ThemedText>
-            )}
-          </TouchableOpacity>
+            Sign In
+          </Button>
 
-          <TouchableOpacity style={styles.quickConnectButton} onPress={handleQuickConnect}>
-            <ThemedText style={[styles.quickConnectText, { color: colors.tint }]}>
-              Use Quick Connect
-            </ThemedText>
-          </TouchableOpacity>
+          <Button
+            variant="ghost"
+            onPress={handleQuickConnect}
+            style={styles.quickConnectButton}
+          >
+            Use Quick Connect
+          </Button>
         </View>
       </ScrollView>
     </ThemedView>
@@ -247,48 +250,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   serverName: {
     fontSize: 16,
-    opacity: 0.6,
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
   usersSection: {
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
-    opacity: 0.5,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     textAlign: 'center',
   },
   usersGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 12,
+    gap: spacing.md,
   },
   userCard: {
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    borderRadius: 12,
+    padding: spacing.md,
+    borderRadius: radii.md,
     width: 100,
   },
   userAvatar: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    marginBottom: 8,
+    borderRadius: radii.full,
+    marginBottom: spacing.sm,
   },
   userAvatarPlaceholder: {
-    backgroundColor: 'rgba(128, 128, 128, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -302,32 +301,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    gap: 16,
+    gap: spacing.lg,
   },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  button: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '600',
+  signInButton: {
+    marginTop: spacing.sm,
   },
   quickConnectButton: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  quickConnectText: {
-    fontSize: 16,
-    fontWeight: '500',
+    alignSelf: 'center',
   },
 });

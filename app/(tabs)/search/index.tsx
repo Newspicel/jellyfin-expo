@@ -6,8 +6,10 @@ import type { SearchBarCommands } from 'react-native-screens';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useSearchStore } from '@/stores/search.store';
+import { useColors, spacing } from '@/theme';
 
 export default function SearchScreen() {
+  const colors = useColors();
   const query = useSearchStore((s) => s.query);
   const setQuery = useSearchStore((s) => s.setQuery);
   const hasQuery = query.trim().length > 0;
@@ -55,7 +57,7 @@ export default function SearchScreen() {
     return (
       <ScrollView contentContainerStyle={styles.emptyContainer}>
         <ThemedView style={styles.emptyContent}>
-          <ThemedText style={styles.emptyText}>
+          <ThemedText style={[styles.emptyText, { color: colors.text.secondary }]}>
             Search for movies, shows, and more
           </ThemedText>
         </ThemedView>
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   emptyContainer: {
     flexGrow: 1,
@@ -88,9 +90,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
-  emptyText: {
-    opacity: 0.6,
-  },
+  emptyText: {},
 });

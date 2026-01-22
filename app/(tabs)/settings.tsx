@@ -1,13 +1,16 @@
-import { StyleSheet, ScrollView, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, ScrollView, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
 import { useServerStore } from '@/stores/server.store';
+import { useColors, spacing, radii } from '@/theme';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   const currentUser = useAuthStore((state) => state.currentUser);
   const logout = useAuthStore((state) => state.logout);
@@ -37,7 +40,7 @@ export default function SettingsScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
       >
         <ThemedText type="title" style={styles.title}>
@@ -45,20 +48,29 @@ export default function SettingsScreen() {
         </ThemedText>
 
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Account</ThemedText>
+          <ThemedText style={[styles.sectionTitle, { color: colors.text.tertiary }]}>
+            Account
+          </ThemedText>
           {currentUser && (
-            <View style={styles.accountInfo}>
+            <View
+              style={[
+                styles.accountInfo,
+                { backgroundColor: colors.background.secondary, borderRadius: radii.md },
+              ]}
+            >
               <ThemedText style={styles.userName}>{currentUser.Name}</ThemedText>
               {server && (
-                <ThemedText style={styles.serverName}>{server.name}</ThemedText>
+                <ThemedText style={[styles.serverName, { color: colors.text.secondary }]}>
+                  {server.name}
+                </ThemedText>
               )}
             </View>
           )}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <ThemedText style={styles.logoutButtonText}>Sign Out</ThemedText>
-        </TouchableOpacity>
+        <Button variant="destructive" size="lg" fullWidth onPress={handleLogout}>
+          Sign Out
+        </Button>
       </ScrollView>
     </ThemedView>
   );
@@ -69,23 +81,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
-    opacity: 0.5,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   accountInfo: {
-    gap: 4,
+    padding: spacing.lg,
+    gap: spacing.xs,
   },
   userName: {
     fontSize: 17,
@@ -93,18 +105,5 @@ const styles = StyleSheet.create({
   },
   serverName: {
     fontSize: 15,
-    opacity: 0.6,
-  },
-  logoutButton: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ff3b30',
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
   },
 });
