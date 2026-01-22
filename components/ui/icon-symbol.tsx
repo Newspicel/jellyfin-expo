@@ -18,6 +18,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
   'rectangle.stack.fill': 'video-library',
   'magnifyingglass': 'search',
   'gearshape.fill': 'settings',
@@ -30,6 +31,16 @@ const MAPPING = {
   'list.bullet': 'list',
   'antenna.radiowaves.left.and.right': 'live-tv',
   'folder.fill': 'folder',
+  'play.fill': 'play-arrow',
+  'checkmark': 'check',
+  'checkmark.circle.fill': 'check-circle',
+  'heart.fill': 'favorite',
+  'heart': 'favorite-border',
+  'star.fill': 'star',
+  'clock': 'schedule',
+  'person.fill': 'person',
+  'building.2': 'business',
+  'info.circle': 'info',
 } as IconMapping;
 
 /**

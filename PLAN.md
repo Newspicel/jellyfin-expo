@@ -305,18 +305,18 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
 
 ### 2.5 Movie Details
 
-- [ ] Create `app/item/movie/[id].tsx`:
-  - [ ] Hero image/backdrop
-  - [ ] Title, year, runtime
-  - [ ] Rating (community, critics)
-  - [ ] Overview/synopsis
-  - [ ] Genres, studios
-  - [ ] Cast & crew list
-  - [ ] Play button
-  - [ ] Mark watched/unwatched
-  - [ ] Add to favorites
-  - [ ] Similar movies row
-  - [ ] Media info (codec, resolution, etc.)
+- [x] Create `app/item/movie/[id].tsx`:
+  - [x] Hero image/backdrop
+  - [x] Title, year, runtime
+  - [x] Rating (community, critics)
+  - [x] Overview/synopsis
+  - [x] Genres, studios
+  - [x] Cast & crew list
+  - [x] Play button
+  - [x] Mark watched/unwatched
+  - [x] Add to favorites
+  - [x] Similar movies row
+  - [x] Media info (codec, resolution, etc.)
 
 ### 2.6 TV Series Details
 
