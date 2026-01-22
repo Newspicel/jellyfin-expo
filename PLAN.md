@@ -433,11 +433,11 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [ ] Fullscreen toggle
   - [x] Settings button (quality, subtitles, audio) (separate selectors)
   - [x] Auto-hide after inactivity (implemented inline in player screen)
-- [ ] Create `components/player/player-controls.tv.tsx`:
-  - [ ] D-pad/remote optimized
-  - [ ] Swipe gestures for seek
-  - [ ] Play/pause on center button
-  - [ ] Back button handling
+- [x] Create `components/player/player-controls.tv.tsx`:
+  - [x] D-pad/remote optimized
+  - [x] Swipe gestures for seek
+  - [x] Play/pause on center button
+  - [x] Back button handling
 
 ### 3.6 Subtitle & Audio Selection
 

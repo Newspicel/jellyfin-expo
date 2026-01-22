@@ -41,6 +41,15 @@ const MAPPING = {
   'person.fill': 'person',
   'building.2': 'business',
   'info.circle': 'info',
+  // Player controls
+  'pause.fill': 'pause',
+  'gobackward.10': 'replay-10',
+  'goforward.30': 'forward-30',
+  'speaker.wave.2.fill': 'volume-up',
+  'captions.bubble.fill': 'closed-caption',
+  'xmark': 'close',
+  'exclamationmark.triangle.fill': 'warning',
+  'film': 'movie',
 } as IconMapping;
 
 /**
