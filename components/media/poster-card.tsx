@@ -11,6 +11,8 @@ interface PosterCardProps {
   width?: number;
   showTitle?: boolean;
   showProgress?: boolean;
+  /** TV focus hint - ignored on mobile */
+  hasTVPreferredFocus?: boolean;
 }
 
 const ASPECT_RATIO = 2 / 3; // Standard poster aspect ratio

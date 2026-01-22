@@ -299,9 +299,9 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Horizontal scroll
   - [x] Row title
   - [ ] "See All" link
-- [ ] Create `components/media/media-grid.tsx`:
-  - [ ] Responsive column count
-  - [ ] TV-optimized spacing
+- [x] Create `components/media/media-grid.tsx`:
+  - [x] Responsive column count
+  - [x] TV-optimized spacing
 
 ### 2.5 Movie Details
 
