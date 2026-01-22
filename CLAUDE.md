@@ -1,4 +1,6 @@
-# Claude Instructions for Jellyfin Expo
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -125,6 +127,52 @@ router.replace('/(auth)/login');  // Replace (no back)
 router.back();                    // Go back
 ```
 
+## Architecture
+
+### Image URLs
+
+Use the utilities in `lib/images.ts` for all image URLs:
+
+```typescript
+import { getPrimaryImageUrl, getBackdropImageUrl } from '@/lib/images';
+
+const posterUrl = getPrimaryImageUrl(item, width * 2); // 2x for retina
+const backdropUrl = getBackdropImageUrl(item);
+```
+
+### Theming System
+
+The `theme/` directory provides a unified styling system:
+
+```typescript
+import { useTheme, useColors, useIsDark } from '@/theme';
+import { spacing, radii, typography } from '@/theme';
+
+// In components
+const { colors, isDark } = useTheme();
+const backgroundColor = colors.background.primary;
+const padding = spacing.md; // 16px
+```
+
+Platform detection is in `theme/platform.ts`:
+
+```typescript
+import { isTV, isIOS, isAndroid, isIOSLiquidGlassSupported } from '@/theme';
+```
+
+### Request Interceptors
+
+The API client (`api/client.ts`) automatically:
+- Prepends the current server URL from `useServerStore`
+- Adds MediaBrowser authorization headers with device info
+- Handles 401 responses by clearing credentials
+
+Initialize once at app startup:
+```typescript
+await initializeApiClient();
+configureApiClient();
+```
+
 ## Don'ts
 
 - Don't edit files in `api/generated/` - they're auto-generated
@@ -132,3 +180,5 @@ router.back();                    // Go back
 - Don't skip the lint/typecheck verification
 - Don't use `npm` - use `bun` instead
 - Don't create new patterns when existing ones work
+- Don't hardcode server URLs or auth tokens - use stores
+- Don't build image URLs manually - use `lib/images.ts`
