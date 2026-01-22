@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
-  FlatList,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/themed-text';
 import { useServerStore, type Server } from '@/stores/server.store';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 function generateServerId(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -25,6 +27,7 @@ function generateServerId(): string {
 
 export default function ServerSelectScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [serverUrl, setServerUrl] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -32,9 +35,8 @@ export default function ServerSelectScreen() {
   const addServer = useServerStore((state) => state.addServer);
   const setCurrentServer = useServerStore((state) => state.setCurrentServer);
 
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const tintColor = useThemeColor({}, 'tint');
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'dark'];
 
   const handleConnect = async () => {
     if (!serverUrl.trim()) {
@@ -85,18 +87,26 @@ export default function ServerSelectScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: textColor }]}>Connect to Jellyfin</Text>
-        <Text style={[styles.subtitle, { color: textColor, opacity: 0.7 }]}>
+    <ThemedView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedText type="title" style={styles.title}>
+          Connect to Jellyfin
+        </ThemedText>
+        <ThemedText style={styles.subtitle}>
           Enter your server address to get started
-        </Text>
+        </ThemedText>
 
         <View style={styles.inputContainer}>
           <TextInput
-            style={[styles.input, { color: textColor, borderColor: tintColor }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
             placeholder="https://jellyfin.example.com"
-            placeholderTextColor={`${textColor}50`}
+            placeholderTextColor={`${colors.text}50`}
             value={serverUrl}
             onChangeText={setServerUrl}
             autoCapitalize="none"
@@ -106,40 +116,37 @@ export default function ServerSelectScreen() {
             onSubmitEditing={handleConnect}
           />
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: tintColor }]}
+            style={[styles.button, { backgroundColor: colors.tint }]}
             onPress={handleConnect}
             disabled={isConnecting}
           >
             {isConnecting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colorScheme === 'dark' ? '#000' : '#fff'} />
             ) : (
-              <Text style={styles.buttonText}>Connect</Text>
+              <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? '#000' : '#fff' }]}>
+                Connect
+              </ThemedText>
             )}
           </TouchableOpacity>
         </View>
 
         {servers.length > 0 && (
           <View style={styles.serversSection}>
-            <Text style={[styles.sectionTitle, { color: textColor }]}>Recent Servers</Text>
-            <FlatList
-              data={servers}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.serverItem, { borderColor: `${textColor}20` }]}
-                  onPress={() => handleSelectServer(item)}
-                >
-                  <Text style={[styles.serverName, { color: textColor }]}>{item.name}</Text>
-                  <Text style={[styles.serverUrl, { color: textColor, opacity: 0.6 }]}>
-                    {item.url}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
+            <ThemedText style={styles.sectionTitle}>Recent Servers</ThemedText>
+            {servers.map((server) => (
+              <TouchableOpacity
+                key={server.id}
+                style={styles.serverItem}
+                onPress={() => handleSelectServer(server)}
+              >
+                <ThemedText style={styles.serverName}>{server.name}</ThemedText>
+                <ThemedText style={styles.serverUrl}>{server.url}</ThemedText>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
@@ -147,18 +154,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    padding: 24,
-    paddingTop: 60,
+  scrollContent: {
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    opacity: 0.6,
     marginBottom: 32,
   },
   inputContainer: {
@@ -178,7 +182,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -186,13 +189,15 @@ const styles = StyleSheet.create({
     marginTop: 48,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 16,
+    textTransform: 'uppercase',
+    opacity: 0.5,
+    marginBottom: 12,
   },
   serverItem: {
     padding: 16,
-    borderWidth: 1,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
     borderRadius: 12,
     marginBottom: 12,
   },
@@ -203,5 +208,6 @@ const styles = StyleSheet.create({
   },
   serverUrl: {
     fontSize: 14,
+    opacity: 0.6,
   },
 });

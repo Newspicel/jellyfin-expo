@@ -1,37 +1,72 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
+import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/themed-text';
 import { useServerStore } from '@/stores/server.store';
 import { useAuthStore } from '@/stores/auth.store';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 import { getDeviceId, getDeviceName, getClientName, getClientVersion } from '@/lib/device';
+import type { UserDto } from '@/api/generated';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [publicUsers, setPublicUsers] = useState<UserDto[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const getCurrentServer = useServerStore((state) => state.getCurrentServer);
   const setCredentials = useAuthStore((state) => state.setCredentials);
   const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
 
-  const textColor = useThemeColor({}, 'text');
-  const backgroundColor = useThemeColor({}, 'background');
-  const tintColor = useThemeColor({}, 'tint');
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'dark'];
+
+  const server = getCurrentServer();
+
+  // Fetch public users when screen loads
+  useEffect(() => {
+    async function fetchPublicUsers() {
+      if (!server) return;
+      try {
+        const response = await fetch(`${server.url}/Users/Public`);
+        if (response.ok) {
+          const users = await response.json();
+          setPublicUsers(users);
+        }
+      } catch {
+        // Silently fail - users can still type their username
+      }
+    }
+    fetchPublicUsers();
+  }, [server]);
+
+  const handleSelectUser = (user: UserDto) => {
+    setUsername(user.Name ?? '');
+    setSelectedUserId(user.Id ?? null);
+  };
+
+  const getUserImageUrl = (user: UserDto) => {
+    if (!server || !user.Id || !user.PrimaryImageTag) return null;
+    return `${server.url}/Users/${user.Id}/Images/Primary?tag=${user.PrimaryImageTag}&maxWidth=200&quality=90`;
+  };
 
   const handleLogin = async () => {
-    const server = getCurrentServer();
     if (!server) {
       Alert.alert('Error', 'No server selected');
       router.back();
@@ -95,33 +130,84 @@ export default function LoginScreen() {
     router.push('/(auth)/quick-connect');
   };
 
-  const server = getCurrentServer();
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: textColor }]}>Sign In</Text>
+    <ThemedView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedText type="title" style={styles.title}>
+          Sign In
+        </ThemedText>
         {server && (
-          <Text style={[styles.serverName, { color: textColor, opacity: 0.7 }]}>
-            {server.name}
-          </Text>
+          <ThemedText style={styles.serverName}>{server.name}</ThemedText>
+        )}
+
+        {publicUsers.length > 0 && (
+          <View style={styles.usersSection}>
+            <ThemedText style={styles.sectionTitle}>Select User</ThemedText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.usersRow}
+            >
+              {publicUsers.map((user) => {
+                const imageUrl = getUserImageUrl(user);
+                const isSelected = selectedUserId === user.Id;
+                return (
+                  <TouchableOpacity
+                    key={user.Id}
+                    style={[
+                      styles.userCard,
+                      isSelected && { borderColor: colors.tint, borderWidth: 2 },
+                    ]}
+                    onPress={() => handleSelectUser(user)}
+                  >
+                    {imageUrl ? (
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.userAvatar}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <View style={[styles.userAvatar, styles.userAvatarPlaceholder]}>
+                        <ThemedText style={styles.userAvatarInitial}>
+                          {(user.Name ?? '?')[0].toUpperCase()}
+                        </ThemedText>
+                      </View>
+                    )}
+                    <ThemedText style={styles.userCardName} numberOfLines={1}>
+                      {user.Name}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         )}
 
         <View style={styles.form}>
           <TextInput
-            style={[styles.input, { color: textColor, borderColor: tintColor }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
             placeholder="Username"
-            placeholderTextColor={`${textColor}50`}
+            placeholderTextColor={`${colors.text}50`}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) => {
+              setUsername(text);
+              setSelectedUserId(null);
+            }}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
           />
           <TextInput
-            style={[styles.input, { color: textColor, borderColor: tintColor }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.tint }]}
             placeholder="Password"
-            placeholderTextColor={`${textColor}50`}
+            placeholderTextColor={`${colors.text}50`}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -130,25 +216,27 @@ export default function LoginScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: tintColor }]}
+            style={[styles.button, { backgroundColor: colors.tint }]}
             onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colorScheme === 'dark' ? '#000' : '#fff'} />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? '#000' : '#fff' }]}>
+                Sign In
+              </ThemedText>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickConnectButton} onPress={handleQuickConnect}>
-            <Text style={[styles.quickConnectText, { color: tintColor }]}>
+            <ThemedText style={[styles.quickConnectText, { color: colors.tint }]}>
               Use Quick Connect
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
         </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
@@ -156,19 +244,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    padding: 24,
-    paddingTop: 60,
+  scrollContent: {
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
     marginBottom: 8,
   },
   serverName: {
     fontSize: 16,
+    opacity: 0.6,
     marginBottom: 32,
+  },
+  usersSection: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    opacity: 0.5,
+    marginBottom: 12,
+  },
+  usersRow: {
+    gap: 12,
+  },
+  userCard: {
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    borderRadius: 12,
+    width: 100,
+  },
+  userAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 8,
+  },
+  userAvatarPlaceholder: {
+    backgroundColor: 'rgba(128, 128, 128, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarInitial: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  userCardName: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   form: {
     gap: 16,
@@ -188,7 +313,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonText: {
-    color: '#fff',
     fontSize: 17,
     fontWeight: '600',
   },
