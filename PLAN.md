@@ -276,9 +276,9 @@ A feature-complete Jellyfin media client for iOS, Android, Apple TV, Android TV,
   - [x] Library type icons
 - [x] Create `app/(tabs)/library/[libraryId].tsx`:
   - [ ] Grid/list view toggle
-  - [ ] Sort options (name, date added, release date, etc.)
+  - [x] Sort options (name, date added, release date, etc.)
   - [ ] Filter options (genre, year, etc.)
-  - [ ] Pagination/infinite scroll
+  - [x] Pagination/infinite scroll
 - [ ] Install and configure FlashList:
   ```bash
   npm install @shopify/flash-list

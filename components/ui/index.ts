@@ -24,3 +24,9 @@ export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from '.
 export { BackButton, type BackButtonProps } from './BackButton';
 export { Input, type InputProps, type InputSize } from './Input';
 export { IconSymbol } from './icon-symbol';
+export {
+  SortSelector,
+  DEFAULT_SORT_OPTIONS,
+  type SortSelectorProps,
+  type SortOption,
+} from './SortSelector';

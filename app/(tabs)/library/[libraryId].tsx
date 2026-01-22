@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  Pressable,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
@@ -14,8 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { PosterCard } from '@/components/media/poster-card';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BackButton } from '@/components/ui';
+import { IconSymbol, BackButton, SortSelector, DEFAULT_SORT_OPTIONS } from '@/components/ui';
+import type { SortOption } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   getItemsOptions,
@@ -51,6 +52,8 @@ export default function LibraryItemsScreen() {
   const currentUser = useAuthStore((s) => s.currentUser);
   const colors = useColors();
   const [refreshing, setRefreshing] = useState(false);
+  const [sortSelectorVisible, setSortSelectorVisible] = useState(false);
+  const [currentSort, setCurrentSort] = useState<SortOption>(DEFAULT_SORT_OPTIONS[0]);
 
   const { numColumns, cardWidth } = useMemo(() => calculateGridLayout(), []);
 
@@ -94,8 +97,8 @@ export default function LibraryItemsScreen() {
       query: {
         userId: currentUser?.Id,
         parentId: libraryId,
-        sortBy: ['SortName'],
-        sortOrder: ['Ascending'],
+        sortBy: [currentSort.sortBy],
+        sortOrder: [currentSort.sortOrder],
         recursive: false,
         includeItemTypes: includeItemTypes,
         fields: ['PrimaryImageAspectRatio'],
@@ -143,6 +146,12 @@ export default function LibraryItemsScreen() {
     setRefreshing(false);
   }, [refetchPage]);
 
+  const onSortChange = useCallback((option: SortOption) => {
+    setCurrentSort(option);
+    setStartIndex(0);
+    setAllItems([]);
+  }, []);
+
   const onEndReached = useCallback(() => {
     if (isFetching) return;
     if (totalCount !== null && allItems.length >= totalCount) return;
@@ -180,14 +189,19 @@ export default function LibraryItemsScreen() {
   // Calculate header height for content inset
   const headerHeight = insets.top + 52;
 
-  // Render the header with floating glass back button and centered title
+  // Render the header with floating glass back button, centered title, and sort button
   const renderHeader = () => (
     <View style={[styles.headerContainer, { paddingTop: insets.top + spacing.sm }]}>
       <BackButton variant="inline" />
       <ThemedText type="title" style={styles.headerTitle} numberOfLines={1}>
         {libraryName}
       </ThemedText>
-      <View style={styles.headerSpacer} />
+      <Pressable
+        style={[styles.sortButton, { backgroundColor: colors.background.tertiary }]}
+        onPress={() => setSortSelectorVisible(true)}
+      >
+        <IconSymbol name="arrow.up.arrow.down" size={18} color={colors.text.primary} />
+      </Pressable>
     </View>
   );
 
@@ -254,6 +268,13 @@ export default function LibraryItemsScreen() {
         showsVerticalScrollIndicator={false}
       />
       {renderHeader()}
+      <SortSelector
+        visible={sortSelectorVisible}
+        options={DEFAULT_SORT_OPTIONS}
+        selectedId={currentSort.id}
+        onSelect={onSortChange}
+        onClose={() => setSortSelectorVisible(false)}
+      />
     </ThemedView>
   );
 }
@@ -279,8 +300,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  headerSpacer: {
-    width: 36, // Match BackButton width for centering
+  sortButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
