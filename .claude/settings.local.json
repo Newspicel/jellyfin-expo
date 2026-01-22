@@ -15,6 +15,7 @@
       "Bash(node /Users/julian/Programming/jellyfin-expo/scripts/swap-rn.js:*)",
       "Bash(gh issue view:*)",
       "Bash(find:*)",
+      "Bash(git:*)",
       "Bash(bunx eslint:*)",
       "WebFetch(domain:api.jellyfin.org)"
     ]
