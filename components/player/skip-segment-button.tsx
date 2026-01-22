@@ -54,7 +54,9 @@ export function SkipSegmentButton({
 }: SkipSegmentButtonProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const bottomAnim = useRef(new Animated.Value(bottomOffsetHidden)).current;
+  // Use translateY instead of bottom to keep all animations on native driver
+  // We animate relative to the "visible" position, so 0 = visible, positive = hidden (moved down)
+  const translateYAnim = useRef(new Animated.Value(bottomOffsetVisible - bottomOffsetHidden)).current;
 
   // Animate in when segment becomes active
   useEffect(() => {
@@ -87,14 +89,15 @@ export function SkipSegmentButton({
     }
   }, [segment, fadeAnim, slideAnim]);
 
-  // Animate bottom position based on controls visibility
+  // Animate vertical position based on controls visibility
+  // translateY 0 = at bottomOffsetVisible position, positive = moved down toward bottomOffsetHidden
   useEffect(() => {
-    Animated.timing(bottomAnim, {
-      toValue: controlsVisible ? bottomOffsetVisible : bottomOffsetHidden,
+    Animated.timing(translateYAnim, {
+      toValue: controlsVisible ? 0 : bottomOffsetVisible - bottomOffsetHidden,
       duration: 200,
-      useNativeDriver: false, // bottom position requires layout animation
+      useNativeDriver: true,
     }).start();
-  }, [controlsVisible, bottomOffsetHidden, bottomOffsetVisible, bottomAnim]);
+  }, [controlsVisible, bottomOffsetHidden, bottomOffsetVisible, translateYAnim]);
 
   const handleSkip = useCallback(() => {
     if (segment) {
@@ -115,8 +118,8 @@ export function SkipSegmentButton({
         styles.container,
         {
           opacity: fadeAnim,
-          transform: [{ translateX: slideAnim }],
-          bottom: bottomAnim,
+          transform: [{ translateX: slideAnim }, { translateY: translateYAnim }],
+          bottom: bottomOffsetVisible,
         },
       ]}
       pointerEvents={segment ? 'auto' : 'none'}

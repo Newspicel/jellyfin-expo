@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { IconSymbol } from '@/components/ui';
+import { IconSymbol } from './icon-symbol';
 import { spacing, radii, fontSizes, fontWeights } from '@/theme/tokens';
 import { useColors } from '@/theme';
 import type { ItemSortBy, SortOrder } from '@/api/generated/types.gen';
